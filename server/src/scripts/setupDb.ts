@@ -5,9 +5,42 @@
 // ============================================================
 
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'crypto'
 import pool from '../config/db'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
+import { buildSearchDocument } from '../utils/stripMarkdown'
+
+/**
+ * 生成一个一次性随机密码（12 字节 → 16 位 base64url 字符）。
+ * 仅当未设置 ADMIN_PASSWORD 时使用，且**只在终端打印一次**。
+ */
+function generateRandomPassword(): string {
+  return randomBytes(12).toString('base64url').slice(0, 16)
+}
+
+/**
+ * 定位唯一的权威 schema 文件。
+ *
+ * 同时兼容两种运行方式：
+ *   - `npm run db:setup` → tsx 直接跑 src，__dirname 为 src/scripts
+ *   - `node dist/scripts/setupDb.js` → __dirname 为 dist/scripts
+ * 后者目录下没有 database/ 目录（tsc 不会拷贝 .sql），因此必须回退到 src 去取。
+ */
+function resolveSchemaPath(): string {
+  const candidates = [
+    join(__dirname, '..', 'database', 'schema.sql'),
+    join(__dirname, '..', '..', 'src', 'database', 'schema.sql'),
+  ]
+  const found = candidates.find((p) => existsSync(p))
+  if (!found) {
+    throw new Error(
+      `找不到 schema.sql，已尝试：\n  ${candidates.join('\n  ')}\n` +
+      `请勿在项目外运行本脚本。`
+    )
+  }
+  return found
+}
 
 async function setupDatabase() {
   const client = await pool.connect()
@@ -15,19 +48,24 @@ async function setupDatabase() {
     console.log('📋 1. 执行建表 SQL...')
 
     // 读取并执行 schema.sql
-    const schemaPath = join(__dirname, '..', 'database', 'schema.sql')
+    const schemaPath = resolveSchemaPath()
     const schemaSql = readFileSync(schemaPath, 'utf-8')
     await client.query(schemaSql)
-    console.log('   ✅ 表结构创建完成')
+    console.log(`   ✅ 表结构创建完成（${schemaPath}）`)
 
     console.log('📋 2. 灌入种子数据...')
 
     // --- 管理员账号 ---
-    const adminEmail = 'admin@blog.com'
-    const adminPassword = 'admin123'
-    const adminName = '博主'
+    // ⚠️ 凭据只从环境变量读取，代码里**不允许**硬编码默认密码：
+    //    明文账号写在源码里等于泄露给所有 clone 仓库的人。
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@blog.com'
+    const configuredPassword = process.env.ADMIN_PASSWORD || ''
+    const generatedPassword = configuredPassword ? '' : generateRandomPassword()
+    const adminPassword = configuredPassword || generatedPassword
+    const adminName = process.env.ADMIN_NAME || '博主'
 
     // 检查是否已存在
+    let adminCreated = false
     const existingAdmin = await client.query('SELECT id FROM users WHERE email = $1', [adminEmail])
     if (existingAdmin.rows.length === 0) {
       const passwordHash = await bcrypt.hash(adminPassword, 10)
@@ -35,9 +73,14 @@ async function setupDatabase() {
         'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3)',
         [adminEmail, passwordHash, adminName]
       )
+      adminCreated = true
       console.log(`   ✅ 管理员账号创建：${adminEmail} / ${adminPassword}`)
+      if (generatedPassword) {
+        console.log('   ⚠️  该密码是随机生成的，**只在这一次输出**，请立即保存到密码管理器。')
+        console.log('   ℹ️  也可通过环境变量 ADMIN_EMAIL / ADMIN_PASSWORD 预先指定。')
+      }
     } else {
-      console.log('   ℹ️  管理员账号已存在，跳过')
+      console.log('   ℹ️  管理员账号已存在，跳过（如需重置密码，请直接 UPDATE users 或使用下一步的后台修改）')
     }
 
     // --- 标签 ---
@@ -61,6 +104,35 @@ async function setupDatabase() {
       } else {
         tagIds[tag.slug] = existing.rows[0].id
       }
+    }
+
+    // --- 分类（一级导航，一篇文章一个分类）---
+    const categories = [
+      { name: '前端', slug: 'frontend', description: '浏览器端与 UI 相关', sort_order: 30 },
+      { name: '后端', slug: 'backend', description: '服务端、数据库与部署', sort_order: 20 },
+      { name: '随笔', slug: 'essay', description: '非技术向的记录与思考', sort_order: 10 },
+    ]
+    const categoryIds: Record<string, number> = {}
+    for (const category of categories) {
+      const existing = await client.query('SELECT id FROM categories WHERE slug = $1', [category.slug])
+      if (existing.rows.length === 0) {
+        const result = await client.query(
+          'INSERT INTO categories (name, slug, description, sort_order) VALUES ($1, $2, $3, $4) RETURNING id',
+          [category.name, category.slug, category.description, category.sort_order]
+        )
+        categoryIds[category.slug] = result.rows[0].id
+        console.log(`   ✅ 分类创建：${category.name}`)
+      } else {
+        categoryIds[category.slug] = existing.rows[0].id
+      }
+    }
+
+    // 示例文章 → 分类 slug 的映射（标签做细粒度关键词，分类做一级导航）
+    const postCategorySlugs: Record<string, string> = {
+      'welcome-to-my-blog': 'essay',
+      'react-19-features': 'frontend',
+      'typescript-type-gymnastics': 'frontend',
+      'express-middleware': 'backend',
     }
 
     // --- 示例文章 ---
@@ -269,10 +341,14 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       const existing = await client.query('SELECT id FROM posts WHERE slug = $1', [post.slug])
       if (existing.rows.length === 0) {
         const publishedAt = post.status === 'published' ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) : null
+        const categorySlug = postCategorySlugs[post.slug]
+        const categoryId = categorySlug ? (categoryIds[categorySlug] ?? null) : null
+        // 搜索文档在写入时生成，避免线上临时 INSERT 的文章搜不到
+        const searchDocument = buildSearchDocument(post.title, post.excerpt, post.content)
         const result = await client.query(
-          `INSERT INTO posts (title, slug, excerpt, content, status, published_at)
-           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-          [post.title, post.slug, post.excerpt, post.content, post.status, publishedAt]
+          `INSERT INTO posts (title, slug, excerpt, content, status, published_at, category_id, search_document)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+          [post.title, post.slug, post.excerpt, post.content, post.status, publishedAt, categoryId, searchDocument]
         )
         const postId = result.rows[0].id
 
@@ -290,8 +366,32 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    // --- 补齐存量文章的 search_document（老库升级时必跑）---
+    const missingDoc = await client.query(
+      `SELECT id, title, excerpt, content FROM posts
+       WHERE search_document IS NULL OR search_document = ''
+       ORDER BY id`
+    )
+    for (const row of missingDoc.rows) {
+      await client.query(
+        'UPDATE posts SET search_document = $1 WHERE id = $2',
+        [buildSearchDocument(row.title, row.excerpt, row.content), row.id]
+      )
+    }
+    if (missingDoc.rows.length > 0) {
+      console.log(`   ✅ 回填 ${missingDoc.rows.length} 篇存量文章的 search_document`)
+    }
+
     console.log('\n🎉 数据库初始化完成！')
-    console.log(`   管理员登录：${adminEmail} / ${adminPassword}`)
+    if (adminCreated && generatedPassword) {
+      // 只有「本次真的创建了账号」且「密码是随机生成的」时才展示 ——
+      // 否则重复执行脚本会打印一个与库中不匹配的假密码，把人彻底带偏。
+      console.log(`   ⚠️ 管理员账号：${adminEmail} / ${adminPassword}（随机生成，请立即保存！）`)
+    } else if (adminCreated) {
+      console.log(`   管理员账号：${adminEmail}（密码取自 ADMIN_PASSWORD）`)
+    } else {
+      console.log(`   管理员账号：${adminEmail}（已存在，本次未修改其密码）`)
+    }
     console.log('   后台地址：http://localhost:5173/admin/login')
   } catch (err) {
     console.error('❌ 数据库初始化失败：', err)

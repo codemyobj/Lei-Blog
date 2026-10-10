@@ -8,6 +8,19 @@ interface MarkdownEditorProps {
   height?: number
 }
 
+/**
+ * 工具栏按钮的「声明式」描述。
+ *
+ * ⚠️ 这里刻意**不存放函数**。若写成 `{ action: () => wrapSelection(...) }`，
+ * 数组字面量在渲染期求值时就已经产出了「闭包引用 textareaRef」的值，
+ * 会被 `react-hooks/refs` 判为「渲染期访问 ref」。
+ * 改成纯数据后，对 ref 的读取只发生在点击回调 `runTool` 内部（事件期，非渲染期）。
+ */
+type EditorTool =
+  | { label: string; title: string; kind: 'wrap'; before: string; after: string; placeholder: string }
+  | { label: string; title: string; kind: 'prefix'; prefix: string }
+  | { label: string; title: string; kind: 'append'; text: string }
+
 // 轻量级 Markdown 编辑器：工具栏 + 分栏（编辑/预览）
 export default function MarkdownEditor({ value, onChange, height = 400 }: MarkdownEditorProps) {
   const { t } = useTranslation()
@@ -60,20 +73,36 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
     }
   }
 
-  const tools = [
-    { label: 'B', title: t('editor.bold'), action: () => wrapSelection('**', '**', t('editor.placeholderBold')) },
-    { label: 'I', title: t('editor.italic'), action: () => wrapSelection('*', '*', t('editor.placeholderItalic')) },
-    { label: 'S', title: t('editor.strikethrough'), action: () => wrapSelection('~~', '~~', t('editor.placeholderStrikethrough')) },
-    { label: 'H', title: t('editor.heading'), action: () => insertLinePrefix('## ') },
-    { label: '"', title: t('editor.quote'), action: () => insertLinePrefix('> ') },
-    { label: '•', title: t('editor.bulletList'), action: () => insertLinePrefix('- ') },
-    { label: '1.', title: t('editor.orderedList'), action: () => insertLinePrefix('1. ') },
-    { label: '</>', title: t('editor.inlineCode'), action: () => wrapSelection('`', '`', t('editor.placeholderInlineCode')) },
-    { label: '{}', title: t('editor.codeBlock'), action: () => wrapSelection('\n```\n', '\n```\n', t('editor.placeholderCodeBlock')) },
-    { label: '🔗', title: t('editor.link'), action: () => wrapSelection('[', '](https://)', t('editor.placeholderLink')) },
-    { label: '🖼', title: t('editor.image'), action: () => wrapSelection('![', '](https://)', t('editor.placeholderImage')) },
-    { label: '—', title: t('editor.divider'), action: () => onChange(value + '\n\n---\n\n') },
+  // 纯数据描述：渲染期不触碰 textareaRef
+  const tools: EditorTool[] = [
+    { label: 'B', title: t('editor.bold'), kind: 'wrap', before: '**', after: '**', placeholder: t('editor.placeholderBold') },
+    { label: 'I', title: t('editor.italic'), kind: 'wrap', before: '*', after: '*', placeholder: t('editor.placeholderItalic') },
+    { label: 'S', title: t('editor.strikethrough'), kind: 'wrap', before: '~~', after: '~~', placeholder: t('editor.placeholderStrikethrough') },
+    { label: 'H', title: t('editor.heading'), kind: 'prefix', prefix: '## ' },
+    { label: '"', title: t('editor.quote'), kind: 'prefix', prefix: '> ' },
+    { label: '•', title: t('editor.bulletList'), kind: 'prefix', prefix: '- ' },
+    { label: '1.', title: t('editor.orderedList'), kind: 'prefix', prefix: '1. ' },
+    { label: '</>', title: t('editor.inlineCode'), kind: 'wrap', before: '`', after: '`', placeholder: t('editor.placeholderInlineCode') },
+    { label: '{}', title: t('editor.codeBlock'), kind: 'wrap', before: '\n```\n', after: '\n```\n', placeholder: t('editor.placeholderCodeBlock') },
+    { label: '🔗', title: t('editor.link'), kind: 'wrap', before: '[', after: '](https://)', placeholder: t('editor.placeholderLink') },
+    { label: '🖼', title: t('editor.image'), kind: 'wrap', before: '![', after: '](https://)', placeholder: t('editor.placeholderImage') },
+    { label: '—', title: t('editor.divider'), kind: 'append', text: '\n\n---\n\n' },
   ]
+
+  // 只有点击时才读 textareaRef
+  const runTool = (tool: EditorTool) => {
+    switch (tool.kind) {
+      case 'wrap':
+        wrapSelection(tool.before, tool.after, tool.placeholder)
+        break
+      case 'prefix':
+        insertLinePrefix(tool.prefix)
+        break
+      case 'append':
+        onChange(value + tool.text)
+        break
+    }
+  }
 
   const editorHeight = height - 44 // 减去工具栏高度
 
@@ -88,7 +117,7 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
           <button
             key={tool.label}
             type="button"
-            onClick={tool.action}
+            onClick={() => runTool(tool)}
             title={tool.title}
             className="w-8 h-8 rounded-lg text-sm font-mono font-bold flex items-center justify-center transition-colors hover:opacity-100"
             style={{ color: 'var(--text-secondary)', opacity: 0.7 }}

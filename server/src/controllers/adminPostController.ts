@@ -1,8 +1,9 @@
 import { Request, Response } from 'express'
 import pool from '../config/db'
 import type { AuthRequest } from '../middleware/auth'
-import type { CreatePostBody, UpdatePostBody } from '../types'
+import type { CategoryRef, CreatePostBody, UpdatePostBody } from '../types'
 import { generateSlug, ensureUniqueSlug } from '../utils/slug'
+import { buildSearchDocument } from '../utils/stripMarkdown'
 
 // 获取单篇文章的标签 ID 列表
 async function getTagIdsForPost(postId: number): Promise<number[]> {
@@ -11,6 +12,51 @@ async function getTagIdsForPost(postId: number): Promise<number[]> {
     [postId]
   )
   return result.rows.map((r: any) => r.tag_id)
+}
+
+/**
+ * 校验分类 ID 是否存在。
+ *
+ * @param categoryId - 目标分类 ID；null 表示「取消分类」
+ * @returns null = 合法；否则为错误信息
+ */
+async function validateCategory(categoryId: number | null | undefined): Promise<string | null> {
+  if (categoryId === undefined || categoryId === null) return null
+  const result = await pool.query('SELECT id FROM categories WHERE id = $1', [categoryId])
+  if (result.rows.length === 0) return '分类不存在'
+  return null
+}
+
+// 把扁平分类列折叠成嵌套 category 对象
+function attachCategory(post: Record<string, any>): void {
+  if (post.category_id_ref) {
+    post.category = {
+      id: post.category_id_ref,
+      name: post.category_name,
+      slug: post.category_slug,
+    }
+  } else {
+    post.category = null
+  }
+  delete post.category_id_ref
+  delete post.category_name
+  delete post.category_slug
+  delete post.search_document
+}
+
+/**
+ * 根据 category_id 查询分类简略信息。
+ *
+ * INSERT / UPDATE ... RETURNING * 只返回 posts 自身的列，拿不到 JOIN 出来的分类字段，
+ * 所以这两处需要单独查一次（单条主键查询，代价可忽略）。
+ */
+async function loadCategory(categoryId: number | null | undefined): Promise<CategoryRef | null> {
+  if (categoryId === null || categoryId === undefined) return null
+  const result = await pool.query(
+    'SELECT id, name, slug FROM categories WHERE id = $1',
+    [categoryId]
+  )
+  return result.rows.length > 0 ? (result.rows[0] as CategoryRef) : null
 }
 
 // 在事务中同步文章的标签关联（先删后插）
@@ -43,10 +89,15 @@ export const adminGetPosts = async (req: Request, res: Response) => {
 
     const postsParams = statusParam.length > 0 ? [pageSize, offset, status] : [pageSize, offset]
 
+    const joinClause = 'LEFT JOIN categories c ON p.category_id = c.id'
+
     const postsQuery = `
       SELECT p.id, p.title, p.slug, p.excerpt, p.cover_image, p.status, p.view_count,
-             p.published_at, p.created_at, p.updated_at
+             p.published_at, p.created_at, p.updated_at,
+             p.category_id,
+             c.id AS category_id_ref, c.name AS category_name, c.slug AS category_slug
       FROM posts p
+      ${joinClause}
       ${statusCondition}
       ORDER BY p.created_at DESC
       LIMIT $1 OFFSET $2`
@@ -63,6 +114,7 @@ export const adminGetPosts = async (req: Request, res: Response) => {
 
     const total = countResult.rows[0].count
     const posts = postsResult.rows
+    posts.forEach((p: Record<string, any>) => attachCategory(p))
 
     // 批量获取标签
     const postIds = posts.map((p: any) => p.id)
@@ -114,7 +166,9 @@ export const adminGetPost = async (req: Request, res: Response) => {
       return
     }
 
-    const post = result.rows[0]
+    const post: Record<string, any> = result.rows[0]
+    // search_document 是搜索内部列，不下发给前端
+    delete post.search_document
     post.tag_ids = await getTagIdsForPost(id)
 
     res.json({ post })
@@ -128,10 +182,17 @@ export const adminGetPost = async (req: Request, res: Response) => {
 export const createPost = async (req: Request, res: Response) => {
   try {
     const authReq = req as AuthRequest
-    const { title, slug, excerpt, content, cover_image, status, published_at, tag_ids }: CreatePostBody = req.body
+    const { title, slug, excerpt, content, cover_image, status, published_at, tag_ids, category_id }: CreatePostBody = req.body
 
     if (!title || !content) {
       res.status(400).json({ error: '标题和内容为必填项' })
+      return
+    }
+
+    // 分类校验（null / undefined 表示不设置分类）
+    const categoryError = await validateCategory(category_id ?? null)
+    if (categoryError) {
+      res.status(400).json({ error: categoryError })
       return
     }
 
@@ -141,23 +202,30 @@ export const createPost = async (req: Request, res: Response) => {
     const finalStatus = status || 'draft'
     const finalPublishedAt = finalStatus === 'published' ? (published_at || new Date().toISOString()) : (published_at || null)
 
+    // 搜索文档写入时生成，查询时不再转换
+    const searchDocument = buildSearchDocument(title, excerpt, content)
+
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
       const result = await client.query(
-        `INSERT INTO posts (title, slug, excerpt, content, cover_image, status, published_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO posts (title, slug, excerpt, content, cover_image, status, published_at, category_id, search_document)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
-        [title, finalSlug, excerpt || null, content, cover_image || null, finalStatus, finalPublishedAt]
+        [title, finalSlug, excerpt || null, content, cover_image || null, finalStatus, finalPublishedAt, category_id ?? null, searchDocument]
       )
-      const post = result.rows[0]
+      const postRow: Record<string, any> = result.rows[0]
 
       if (tag_ids && tag_ids.length > 0) {
-        await syncPostTags(post.id, tag_ids, client)
+        await syncPostTags(postRow.id, tag_ids, client)
       }
 
       await client.query('COMMIT')
+      const post: Record<string, any> = postRow
       post.tag_ids = tag_ids || []
+      // 事务提交后再查分类，避免在同一个事务里混用 pool 与 client
+      post.category = await loadCategory(post.category_id)
+      delete post.search_document
       res.status(201).json({ post })
     } catch (err) {
       await client.query('ROLLBACK')
@@ -180,7 +248,14 @@ export const updatePost = async (req: Request, res: Response) => {
       return
     }
 
-    const { title, slug, excerpt, content, cover_image, status, published_at, tag_ids }: UpdatePostBody = req.body
+    const { title, slug, excerpt, content, cover_image, status, published_at, tag_ids, category_id }: UpdatePostBody = req.body
+
+    // 分类校验：显式传 null 表示取消分类，不传表示保持原值
+    const categoryError = await validateCategory(category_id)
+    if (categoryError) {
+      res.status(400).json({ error: categoryError })
+      return
+    }
 
     // 检查文章是否存在
     const existing = await pool.query('SELECT * FROM posts WHERE id = $1', [id])
@@ -195,6 +270,7 @@ export const updatePost = async (req: Request, res: Response) => {
     const finalExcerpt = excerpt !== undefined ? excerpt : oldPost.excerpt
     const finalCover = cover_image !== undefined ? cover_image : oldPost.cover_image
     const finalStatus = status ?? oldPost.status
+    const finalCategoryId = category_id !== undefined ? category_id : oldPost.category_id
 
     // slug 处理：若提供新 slug 则确保唯一（排除自身）
     let finalSlug = oldPost.slug
@@ -212,25 +288,32 @@ export const updatePost = async (req: Request, res: Response) => {
       finalPublishedAt = new Date(published_at)
     }
 
+    // 搜索文档随标题/摘要/正文一起重建
+    const searchDocument = buildSearchDocument(finalTitle, finalExcerpt, finalContent)
+
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
       const result = await client.query(
         `UPDATE posts
          SET title = $1, slug = $2, excerpt = $3, content = $4, cover_image = $5,
-             status = $6, published_at = $7, updated_at = NOW()
-         WHERE id = $8
+             status = $6, published_at = $7, category_id = $8, search_document = $9
+         WHERE id = $10
          RETURNING *`,
-        [finalTitle, finalSlug, finalExcerpt, finalContent, finalCover, finalStatus, finalPublishedAt, id]
+        [finalTitle, finalSlug, finalExcerpt, finalContent, finalCover, finalStatus, finalPublishedAt, finalCategoryId, searchDocument, id]
       )
-      const post = result.rows[0]
+      const postRow: Record<string, any> = result.rows[0]
 
       if (tag_ids !== undefined) {
         await syncPostTags(id, tag_ids, client)
       }
 
       await client.query('COMMIT')
+      const post: Record<string, any> = postRow
       post.tag_ids = tag_ids !== undefined ? tag_ids : await getTagIdsForPost(id)
+      // 事务提交后再查分类，避免在同一个事务里混用 pool 与 client
+      post.category = await loadCategory(post.category_id)
+      delete post.search_document
       res.json({ post })
     } catch (err) {
       await client.query('ROLLBACK')

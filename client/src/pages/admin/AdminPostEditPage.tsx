@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { adminGetPost, adminCreatePost, adminUpdatePost, adminGetTags } from '../../hooks/useAdmin'
+import { extractErrorMessage } from '../../hooks/useAsyncResource'
 import type { Tag, CreatePostData } from '../../types'
 import MarkdownEditor from '../../components/MarkdownEditor'
 import { Spinner } from '../../components/Spinner'
@@ -76,8 +77,8 @@ export default function AdminPostEditPage() {
         await adminCreatePost(data)
       }
       navigate('/admin/posts')
-    } catch (err: any) {
-      setError(err.response?.data?.error || t('error.saveFailed'))
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, t('error.saveFailed')))
     } finally {
       setSaving(false)
     }

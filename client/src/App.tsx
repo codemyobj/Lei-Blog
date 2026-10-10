@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
-import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider } from './context/AuthProvider'
+import { ThemeProvider } from './context/ThemeProvider'
 import Layout from './components/Layout'
 import AdminLayout from './components/AdminLayout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -8,6 +8,10 @@ import HomePage from './pages/HomePage'
 import PostDetailPage from './pages/PostDetailPage'
 import TagsPage from './pages/TagsPage'
 import TagDetailPage from './pages/TagDetailPage'
+import CategoriesPage from './pages/CategoriesPage'
+import CategoryDetailPage from './pages/CategoryDetailPage'
+import ArchivePage from './pages/ArchivePage'
+import SearchPage from './pages/SearchPage'
 import AboutPage from './pages/AboutPage'
 import NotFoundPage from './pages/NotFoundPage'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
@@ -29,6 +33,10 @@ export default function App() {
               <Route path="/posts/:slug" element={<PostDetailPage />} />
               <Route path="/tags" element={<TagsPage />} />
               <Route path="/tags/:slug" element={<TagDetailPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/categories/:slug" element={<CategoryDetailPage />} />
+              <Route path="/archive" element={<ArchivePage />} />
+              <Route path="/search" element={<SearchPage />} />
               <Route path="/about" element={<AboutPage />} />
             </Route>
 

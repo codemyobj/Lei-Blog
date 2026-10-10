@@ -7,12 +7,24 @@
     <meta name="description" content="个人博客 - 分享技术与思考" />
     <title>个人博客</title>
     <script>
-      // 防止主题闪烁：在渲染前应用主题
+      // 防止主题闪烁：在首屏渲染前同步应用主题
+      //
+      // ⚠️ 逻辑必须与 src/context/ThemeContext.tsx 完全一致，否则会出现首屏闪白/闪黑：
+      //   1. 存储键名同为 'theme'
+      //   2. 合法值同为 light | dark | system
+      //   3. 脏数据 / 未配置时回落 'system'（而非旧的 prefersDark 直判）
+      //   4. 同步设置 color-scheme，避免原生控件闪一下默认配色
       (function () {
-        const saved = localStorage.getItem('theme')
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        if (saved === 'dark' || (!saved && prefersDark)) {
-          document.documentElement.classList.add('dark')
+        try {
+          var saved = localStorage.getItem('theme')
+          var theme = (saved === 'light' || saved === 'dark' || saved === 'system') ? saved : 'system'
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+          var dark = theme === 'dark' || (theme === 'system' && prefersDark)
+          var root = document.documentElement
+          root.classList.toggle('dark', dark)
+          root.style.colorScheme = dark ? 'dark' : 'light'
+        } catch (e) {
+          // localStorage 不可用（无痕模式）时退化为跟随系统，不阻塞渲染
         }
       })()
     </script>

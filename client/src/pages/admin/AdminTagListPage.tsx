@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { adminGetTags, adminCreateTag, adminUpdateTag, adminDeleteTag } from '../../hooks/useAdmin'
+import { adminCreateTag, adminUpdateTag, adminDeleteTag } from '../../hooks/useAdmin'
+import { extractErrorMessage, useAsyncResource } from '../../hooks/useAsyncResource'
 import type { Tag } from '../../types'
 import { Spinner } from '../../components/Spinner'
 import EmptyState from '../../components/EmptyState'
 
 export default function AdminTagListPage() {
   const { t } = useTranslation()
-  const [tags, setTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [name, setName] = useState('')
@@ -16,17 +15,14 @@ export default function AdminTagListPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const fetch = () => {
-    setLoading(true)
-    adminGetTags()
-      .then(setTags)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    fetch()
-  }, [])
+  // 标签列表拉取交给 useAsyncResource：loading 由「请求键」派生，
+  // 避免在 effect 体内同步 setLoading(true) 触发级联渲染
+  // （react-hooks/set-state-in-effect）。
+  const { data, loading, reload } = useAsyncResource<{ tags: Tag[] }>(
+    'admin-tags',
+    '/admin/tags'
+  )
+  const tags = data?.tags ?? []
 
   const openCreate = () => {
     setEditingTag(null)
@@ -58,9 +54,9 @@ export default function AdminTagListPage() {
         await adminCreateTag({ name: name.trim(), slug: slug.trim() || undefined })
       }
       setShowForm(false)
-      fetch()
-    } catch (err: any) {
-      setError(err.response?.data?.error || t('error.saveFailed'))
+      reload()
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, t('error.saveFailed')))
     } finally {
       setSaving(false)
     }
@@ -70,9 +66,9 @@ export default function AdminTagListPage() {
     if (!confirm(t('error.deleteTagConfirm'))) return
     try {
       await adminDeleteTag(id)
-      fetch()
-    } catch (err: any) {
-      alert(err.response?.data?.error || t('error.deleteFailed'))
+      reload()
+    } catch (err: unknown) {
+      alert(extractErrorMessage(err, t('error.deleteFailed')))
     }
   }
 

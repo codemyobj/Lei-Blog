@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { adminGetAbout, adminUpdateAbout } from '../../hooks/useAdmin'
+import { extractErrorMessage } from '../../hooks/useAsyncResource'
 import MarkdownEditor from '../../components/MarkdownEditor'
 import MarkdownRenderer from '../../components/MarkdownRenderer'
 import { Spinner } from '../../components/Spinner'
@@ -35,8 +36,8 @@ export default function AdminAboutEditPage() {
       setUpdatedAt(about.updated_at)
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
-    } catch (err: any) {
-      setError(err.response?.data?.error || t('error.saveFailed'))
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, t('error.saveFailed')))
     } finally {
       setSaving(false)
     }

@@ -1,19 +1,20 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useTheme } from '../context/ThemeContext'
-import { useAuth } from '../context/AuthContext'
 import LanguageSwitcher from './LanguageSwitcher'
+import ThemeSwitcher from './ThemeSwitcher'
+import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
   const location = useLocation()
   const { t } = useTranslation()
-  const { theme, toggleTheme } = useTheme()
   const { user } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const navLinks = [
     { to: '/', label: t('nav.home') },
+    { to: '/archive', label: t('nav.archive') },
+    { to: '/categories', label: t('nav.categories') },
     { to: '/tags', label: t('nav.tags') },
     { to: '/about', label: t('nav.about') },
   ]
@@ -23,6 +24,12 @@ export default function Navbar() {
     return location.pathname.startsWith(path)
   }
 
+  /** 导航链接的统一样式（桌面 / 移动端复用） */
+  const linkStyle = (path: string) => ({
+    color: isActive(path) ? 'var(--brand)' : 'var(--text-secondary)',
+    background: isActive(path) ? 'var(--brand-light)' : 'transparent',
+  })
+
   return (
     <header
       className="sticky top-0 z-50 backdrop-blur-md border-b"
@@ -30,59 +37,46 @@ export default function Navbar() {
     >
       <nav className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg" style={{ color: 'var(--text)' }}>
+        <Link to="/" className="flex items-center gap-2 font-bold text-lg shrink-0" style={{ color: 'var(--text)' }}>
           <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
             <rect width="32" height="32" rx="8" fill="var(--brand)" />
             <path d="M9 11h14M9 16h14M9 21h9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
-          <span>{t('nav.brand')}</span>
+          <span className="hidden sm:inline">{t('nav.brand')}</span>
         </Link>
 
         {/* 桌面端导航 */}
-        <div className="hidden sm:flex items-center gap-1">
+        <div className="hidden sm:flex items-center gap-0.5">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="px-4 py-2 rounded-full text-sm font-semibold transition-colors"
-              style={{
-                color: isActive(link.to) ? 'var(--brand)' : 'var(--text-secondary)',
-                background: isActive(link.to) ? 'var(--brand-light)' : 'transparent',
-              }}
+              className="px-3 py-2 rounded-full text-sm font-semibold transition-colors"
+              style={linkStyle(link.to)}
             >
               {link.label}
             </Link>
           ))}
 
+          {/* 搜索入口（图标按钮，节省横向空间） */}
+          <Link
+            to="/search"
+            className="ml-0.5 p-2 rounded-full transition-colors"
+            style={{ color: isActive('/search') ? 'var(--brand)' : 'var(--text-secondary)' }}
+            title={t('nav.search')}
+            aria-label={t('nav.search')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </Link>
+
           {/* 语言切换 */}
           <LanguageSwitcher className="ml-1" />
 
-          {/* 主题切换 */}
-          <button
-            onClick={toggleTheme}
-            className="ml-1 p-2 rounded-full transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
-            title={t('nav.toggleTheme')}
-            aria-label={t('nav.toggleTheme')}
-          >
-            {theme === 'light' ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            )}
-          </button>
+          {/* 主题三态切换 */}
+          <ThemeSwitcher className="ml-1" />
 
           {/* 后台入口 */}
           <Link
@@ -94,40 +88,31 @@ export default function Navbar() {
         </div>
 
         {/* 移动端菜单按钮 */}
-        <div className="flex sm:hidden items-center gap-2">
-          <LanguageSwitcher />
-
-          <button
-            onClick={toggleTheme}
+        <div className="flex sm:hidden items-center gap-1">
+          <Link
+            to="/search"
             className="p-2 rounded-full"
             style={{ color: 'var(--text-secondary)' }}
-            aria-label={t('nav.toggleTheme')}
+            aria-label={t('nav.search')}
           >
-            {theme === 'light' ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            )}
-          </button>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </Link>
+
+          <LanguageSwitcher />
+
+          {/* 移动端用紧凑版：单按钮循环 亮 → 暗 → 跟随系统 */}
+          <ThemeSwitcher variant="compact" />
+
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="p-2 rounded-full"
             style={{ color: 'var(--text)' }}
-              aria-label={t('nav.menu')}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            aria-label={t('nav.menu')}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               {mobileOpen ? (
                 <>
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -155,10 +140,7 @@ export default function Navbar() {
                 to={link.to}
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
-                style={{
-                  color: isActive(link.to) ? 'var(--brand)' : 'var(--text-secondary)',
-                  background: isActive(link.to) ? 'var(--brand-light)' : 'transparent',
-                }}
+                style={linkStyle(link.to)}
               >
                 {link.label}
               </Link>

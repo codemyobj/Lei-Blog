@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { usePosts } from '../hooks/usePosts'
@@ -10,14 +9,13 @@ import EmptyState from '../components/EmptyState'
 export default function HomePage() {
   const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const page = parseInt(searchParams.get('page') || '1')
-  const [currentPage, setCurrentPage] = useState(page)
 
-  useEffect(() => {
-    setCurrentPage(page)
-  }, [page])
+  // 页码直接从 URL 派生，不再用 useState 镜像再在 effect 里同步——
+  // 后者既是多余的一跳渲染，也会命中 react-hooks/set-state-in-effect。
+  const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1
 
-  const { data, loading, error } = usePosts(currentPage, 9)
+  const { data, loading, error } = usePosts(page, 9)
 
   const handlePageChange = (newPage: number) => {
     setSearchParams({ page: String(newPage) })

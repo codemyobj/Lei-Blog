@@ -3,7 +3,7 @@ import type { Post, Tag, About, CreatePostData, CreateTagData, PaginatedPosts } 
 
 // 文章管理
 export async function adminGetPosts(page = 1, pageSize = 20, status?: string): Promise<PaginatedPosts> {
-  const params: Record<string, any> = { page, pageSize }
+  const params: Record<string, string | number> = { page, pageSize }
   if (status) params.status = status
   const res = await apiClient.get('/admin/posts', { params })
   return res.data

@@ -1,53 +1,39 @@
-import { useState, useEffect, useCallback } from 'react'
-import apiClient from '../api'
+import { useAsyncResource } from './useAsyncResource'
 import i18n from '../i18n'
 import type { Post, PaginatedPosts } from '../types'
 
-export function usePosts(page = 1, pageSize = 9, tag?: string) {
-  const [data, setData] = useState<PaginatedPosts | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+/** 拼接列表查询串（只带上真正生效的筛选参数，避免空参数污染 URL） */
+function buildListUrl(page: number, pageSize: number, tag?: string, category?: string): string {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+  if (tag) params.set('tag', tag)
+  if (category) params.set('category', category)
+  return `/posts?${params.toString()}`
+}
 
-  const fetch = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const params: Record<string, any> = { page, pageSize }
-      if (tag) params.tag = tag
-      const res = await apiClient.get('/posts', { params })
-      setData(res.data)
-    } catch (err: any) {
-      setError(err.response?.data?.error || i18n.t('error.loadPosts'))
-    } finally {
-      setLoading(false)
-    }
-  }, [page, pageSize, tag])
+/**
+ * 文章列表（分页）。
+ *
+ * 筛选维度互斥地通过 tag 或 category 传入；同时传两者时后端会叠加过滤，
+ * 但页面层不应出现这种用法（标签页归标签页，分类页归分类页）。
+ *
+ * 重取由 `useAsyncResource` 内部的令牌完成——令牌只在事件处理器里递增，
+ * 不在 effect 体内 setState（后者会命中 react-hooks/set-state-in-effect）。
+ */
+export function usePosts(page = 1, pageSize = 9, tag?: string, category?: string) {
+  const requestKey = `posts|${page}|${pageSize}|${tag ?? ''}|${category ?? ''}`
+  const { data, loading, error, reload } = useAsyncResource<PaginatedPosts>(
+    requestKey,
+    buildListUrl(page, pageSize, tag, category),
+    i18n.t('error.loadPosts')
+  )
 
-  useEffect(() => {
-    fetch()
-  }, [fetch])
-
-  return { data, loading, error, refetch: fetch }
+  return { data, loading, error, refetch: reload }
 }
 
 export function usePost(slug: string | undefined) {
-  const [post, setPost] = useState<Post | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (!slug) {
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    setError('')
-    apiClient
-      .get(`/posts/${slug}`)
-      .then((res) => setPost(res.data.post))
-    .catch((err) => setError(err.response?.data?.error || i18n.t('error.loadPosts')))
-    .finally(() => setLoading(false))
-  }, [slug])
-
-  return { post, loading, error }
+  const { data, loading, error } = useAsyncResource<{ post: Post }>(
+    slug ?? null,
+    `/posts/${slug ?? ''}`
+  )
+  return { post: data?.post ?? null, loading, error }
 }

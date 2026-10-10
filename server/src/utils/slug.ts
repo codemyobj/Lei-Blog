@@ -18,7 +18,7 @@ export async function ensureUniqueSlug(
   pool: any,
   baseSlug: string,
   excludeId?: number,
-  table: 'posts' | 'tags' = 'posts'
+  table: 'posts' | 'tags' | 'categories' = 'posts'
 ): Promise<string> {
   let slug = baseSlug || 'untitled'
   let suffix = 0

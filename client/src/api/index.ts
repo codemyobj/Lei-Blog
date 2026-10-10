@@ -1,7 +1,15 @@
 import axios from 'axios'
 
+/**
+ * API 基础地址。
+ *
+ * 默认 `/api`（同域部署，由 Nginx 把 /api 反代到 127.0.0.1:8080）。
+ * 若需前后端分域部署，设置 `VITE_API_BASE` 即可（Vite 在 build 期内联该值，改了必须重新构建）。
+ */
+const baseURL: string = import.meta.env.VITE_API_BASE ?? '/api'
+
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL,
 })
 
 // 请求拦截器：注入 JWT token

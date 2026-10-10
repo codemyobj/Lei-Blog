@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
+import { extractErrorMessage } from '../../hooks/useAsyncResource'
 
 export default function AdminLoginPage() {
   const { t } = useTranslation()
@@ -19,8 +20,8 @@ export default function AdminLoginPage() {
     try {
       await login(email, password)
       navigate('/admin')
-    } catch (err: any) {
-      setError(err.response?.data?.error || t('error.loginFailed'))
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, t('error.loginFailed')))
     } finally {
       setLoading(false)
     }
@@ -60,7 +61,7 @@ export default function AdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@blog.com"
+                placeholder="you@example.com"
                 className="input"
                 required
                 autoFocus
@@ -82,9 +83,6 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-            {t('admin.defaultAccount')}
-          </p>
         </div>
       </div>
     </div>

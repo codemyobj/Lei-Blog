@@ -1,15 +1,14 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
 import LanguageSwitcher from './LanguageSwitcher'
+import ThemeSwitcher from './ThemeSwitcher'
 
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
 
   const menuItems = [
     { to: '/admin', label: t('admin.dashboard'), icon: 'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z' },
@@ -92,9 +91,7 @@ export default function AdminLayout() {
         <Link to="/admin" className="font-bold text-sm" style={{ color: 'var(--text)' }}>{t('admin.title')}</Link>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <button onClick={toggleTheme} className="p-2" style={{ color: 'var(--text-secondary)' }}>
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
+          <ThemeSwitcher variant="compact" />
           <button onClick={handleLogout} className="btn btn-danger text-xs">{t('admin.logout')}</button>
         </div>
       </div>

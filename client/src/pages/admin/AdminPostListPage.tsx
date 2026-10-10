@@ -1,38 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { adminGetPosts, adminDeletePost } from '../../hooks/useAdmin'
+import { adminDeletePost } from '../../hooks/useAdmin'
+import { extractErrorMessage, useAsyncResource } from '../../hooks/useAsyncResource'
 import type { Post, PaginatedPosts } from '../../types'
 import { Spinner } from '../../components/Spinner'
 import EmptyState from '../../components/EmptyState'
 import { formatDate } from '../../utils/formatDate'
 
+const PAGE_SIZE = 10
+
 export default function AdminPostListPage() {
   const { t } = useTranslation()
-  const [data, setData] = useState<PaginatedPosts | null>(null)
-  const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [page, setPage] = useState(1)
 
-  const fetch = () => {
-    setLoading(true)
-    adminGetPosts(page, 10, statusFilter || undefined)
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }
+  // 列表拉取交给 useAsyncResource：loading 由「请求键」派生，
+  // 避免在 effect 体内同步 setLoading(true) 触发级联渲染
+  // （react-hooks/set-state-in-effect）。
+  const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) })
+  if (statusFilter) params.set('status', statusFilter)
 
-  useEffect(() => {
-    fetch()
-  }, [page, statusFilter])
+  const { data, loading, error, reload } = useAsyncResource<PaginatedPosts>(
+    `admin-posts|${page}|${statusFilter}`,
+    `/admin/posts?${params.toString()}`
+  )
 
   const handleDelete = async (id: number) => {
     if (!confirm(t('error.deletePostConfirm'))) return
     try {
       await adminDeletePost(id)
-      fetch()
-    } catch (err: any) {
-      alert(err.response?.data?.error || t('error.deleteFailed'))
+      reload()
+    } catch (err: unknown) {
+      alert(extractErrorMessage(err, t('error.deleteFailed')))
     }
   }
 
@@ -71,6 +71,13 @@ export default function AdminPostListPage() {
           </button>
         ))}
       </div>
+
+      {/* 拉取失败 */}
+      {error && (
+        <div className="card p-4 mb-6 text-sm" style={{ color: 'var(--danger)' }}>
+          {error}
+        </div>
+      )}
 
       {loading ? (
         <Spinner />

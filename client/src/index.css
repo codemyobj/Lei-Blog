@@ -231,13 +231,15 @@
 }
 .markdown-body pre {
   @apply my-4 p-4 rounded-xl overflow-x-auto;
-  background: #0d1117;
-  border: 1px solid var(--border);
+  /* 原来是写死的 #0d1117（暗色）：亮色模式下会出现「深色底 + 深色 token」，
+     等于高亮完全不可读。改为变量驱动，与 hljs token 配色同步切换。 */
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
 }
 .markdown-body pre code {
   background: transparent;
   padding: 0;
-  color: #e6edf3;
+  color: var(--hl-fg);
   font-size: 0.875em;
 }
 .markdown-body img {
@@ -267,6 +269,232 @@
   @apply mr-2;
 }
 
-/* highlight.js 主题切换 */
-.light-code .hljs { color: #24292e; background: transparent; }
-.dark-code .hljs { color: #e6edf3; background: transparent; }
+/* ============================================================
+   highlight.js token 配色（变量驱动，light / dark 两套）
+   ------------------------------------------------------------
+   为什么手写而不引官方主题文件：
+   官方主题（github.css / github-dark.css）是**全局作用域**的，无法加 `.dark` 前缀，
+   同时引入两个会按 CSS 顺序互相覆盖，暗色永远赢不了。因此这里自己维护两份变量：
+   `:root` = 亮色，`.dark` = 暗色，靠 <html class="dark"> 切换。
+
+   同时把 pre 背景也改成变量驱动（原来是写死的 #0d1117）：
+   否则亮色模式下会是「深色背景 + 深色 token」，等于高亮不可读。
+
+   变量命名沿用 GitHub 官方配色的语义，保证两套之间**每个 token 都不同色**。
+   ============================================================ */
+@layer base {
+  :root {
+    --code-bg: #f6f8fa;
+    --code-border: #e2e8f0;
+    --hl-fg: #24292e;
+    --hl-comment: #6a737d;
+    --hl-keyword: #d73a49;
+    --hl-string: #032f62;
+    --hl-number: #005cc5;
+    --hl-function: #6f42c1;
+    --hl-title: #6f42c1;
+    --hl-attr: #005cc5;
+    --hl-built_in: #e36209;
+    --hl-literal: #005cc5;
+    --hl-type: #d73a49;
+    --hl-variable: #e36209;
+    --hl-tag: #22863a;
+    --hl-name: #22863a;
+    --hl-attribute: #6f42c1;
+    --hl-regexp: #032f62;
+    --hl-meta: #6a737d;
+    --hl-symbol: #005cc5;
+    --hl-bullet: #005cc5;
+    --hl-section: #005cc5;
+    --hl-selector-tag: #22863a;
+    --hl-selector-class: #6f42c1;
+    --hl-selector-id: #6f42c1;
+    --hl-selector-attr: #005cc5;
+    --hl-addition: #22863a;
+    --hl-deletion: #d73a49;
+    --hl-emphasis: #24292e;
+    --hl-strong: #24292e;
+    --hl-quote: #6a737d;
+    --hl-params: #24292e;
+    --hl-property: #005cc5;
+    --hl-link: #032f62;
+  }
+
+  .dark {
+    --code-bg: #0d1117;
+    --code-border: #30363d;
+    --hl-fg: #e6edf3;
+    --hl-comment: #8b949e;
+    --hl-keyword: #ff7b72;
+    --hl-string: #a5d6ff;
+    --hl-number: #79c0ff;
+    --hl-function: #d2a8ff;
+    --hl-title: #d2a8ff;
+    --hl-attr: #79c0ff;
+    --hl-built_in: #ffa657;
+    --hl-literal: #79c0ff;
+    --hl-type: #ff7b72;
+    --hl-variable: #ffa657;
+    --hl-tag: #7ee787;
+    --hl-name: #7ee787;
+    --hl-attribute: #d2a8ff;
+    --hl-regexp: #a5d6ff;
+    --hl-meta: #8b949e;
+    --hl-symbol: #79c0ff;
+    --hl-bullet: #79c0ff;
+    --hl-section: #79c0ff;
+    --hl-selector-tag: #7ee787;
+    --hl-selector-class: #d2a8ff;
+    --hl-selector-id: #d2a8ff;
+    --hl-selector-attr: #79c0ff;
+    --hl-addition: #7ee787;
+    --hl-deletion: #ff7b72;
+    --hl-emphasis: #e6edf3;
+    --hl-strong: #e6edf3;
+    --hl-quote: #8b949e;
+    --hl-params: #e6edf3;
+    --hl-property: #79c0ff;
+    --hl-link: #a5d6ff;
+  }
+}
+
+/* MarkdownRenderer 会额外挂 light-code / dark-code class，
+   这里让它们也定义一遍同名变量，作为「.dark 缺失时」的兜底（两者取值一致，不会打架）。 */
+.light-code {
+  --code-bg: #f6f8fa;
+  --hl-fg: #24292e;
+  --hl-comment: #6a737d;
+  --hl-keyword: #d73a49;
+  --hl-string: #032f62;
+  --hl-number: #005cc5;
+  --hl-function: #6f42c1;
+  --hl-title: #6f42c1;
+  --hl-attr: #005cc5;
+  --hl-built_in: #e36209;
+  --hl-literal: #005cc5;
+  --hl-type: #d73a49;
+  --hl-variable: #e36209;
+  --hl-tag: #22863a;
+  --hl-name: #22863a;
+  --hl-attribute: #6f42c1;
+  --hl-regexp: #032f62;
+  --hl-meta: #6a737d;
+  --hl-symbol: #005cc5;
+  --hl-bullet: #005cc5;
+  --hl-section: #005cc5;
+  --hl-selector-tag: #22863a;
+  --hl-selector-class: #6f42c1;
+  --hl-selector-id: #6f42c1;
+  --hl-selector-attr: #005cc5;
+  --hl-addition: #22863a;
+  --hl-deletion: #d73a49;
+  --hl-emphasis: #24292e;
+  --hl-strong: #24292e;
+  --hl-quote: #6a737d;
+  --hl-params: #24292e;
+  --hl-property: #005cc5;
+  --hl-link: #032f62;
+}
+
+.dark-code {
+  --code-bg: #0d1117;
+  --hl-fg: #e6edf3;
+  --hl-comment: #8b949e;
+  --hl-keyword: #ff7b72;
+  --hl-string: #a5d6ff;
+  --hl-number: #79c0ff;
+  --hl-function: #d2a8ff;
+  --hl-title: #d2a8ff;
+  --hl-attr: #79c0ff;
+  --hl-built_in: #ffa657;
+  --hl-literal: #79c0ff;
+  --hl-type: #ff7b72;
+  --hl-variable: #ffa657;
+  --hl-tag: #7ee787;
+  --hl-name: #7ee787;
+  --hl-attribute: #d2a8ff;
+  --hl-regexp: #a5d6ff;
+  --hl-meta: #8b949e;
+  --hl-symbol: #79c0ff;
+  --hl-bullet: #79c0ff;
+  --hl-section: #79c0ff;
+  --hl-selector-tag: #7ee787;
+  --hl-selector-class: #d2a8ff;
+  --hl-selector-id: #d2a8ff;
+  --hl-selector-attr: #79c0ff;
+  --hl-addition: #7ee787;
+  --hl-deletion: #ff7b72;
+  --hl-emphasis: #e6edf3;
+  --hl-strong: #e6edf3;
+  --hl-quote: #8b949e;
+  --hl-params: #e6edf3;
+  --hl-property: #79c0ff;
+  --hl-link: #a5d6ff;
+}
+
+/* --- token 规则：一个 class 一条规则，各自指向自己的变量 ---
+   这样切换 <html class="dark"> 时整套配色一次生效，且每个 token 在两套主题下都不同色。 */
+.markdown-body .hljs {
+  color: var(--hl-fg);
+  background: transparent;
+}
+.markdown-body .hljs-comment { color: var(--hl-comment); font-style: italic; }
+.markdown-body .hljs-quote { color: var(--hl-quote); font-style: italic; }
+.markdown-body .hljs-keyword { color: var(--hl-keyword); }
+.markdown-body .hljs-string { color: var(--hl-string); }
+.markdown-body .hljs-number { color: var(--hl-number); }
+.markdown-body .hljs-function { color: var(--hl-function); }
+.markdown-body .hljs-title { color: var(--hl-title); }
+.markdown-body .hljs-attr { color: var(--hl-attr); }
+.markdown-body .hljs-attribute { color: var(--hl-attribute); }
+.markdown-body .hljs-built_in { color: var(--hl-built_in); }
+.markdown-body .hljs-literal { color: var(--hl-literal); }
+.markdown-body .hljs-type { color: var(--hl-type); }
+.markdown-body .hljs-variable { color: var(--hl-variable); }
+.markdown-body .hljs-template-variable { color: var(--hl-variable); }
+.markdown-body .hljs-tag { color: var(--hl-tag); }
+.markdown-body .hljs-name { color: var(--hl-name); }
+.markdown-body .hljs-regexp { color: var(--hl-regexp); }
+.markdown-body .hljs-meta { color: var(--hl-meta); }
+.markdown-body .hljs-symbol { color: var(--hl-symbol); }
+.markdown-body .hljs-bullet { color: var(--hl-bullet); }
+.markdown-body .hljs-section { color: var(--hl-section); font-weight: 600; }
+.markdown-body .hljs-selector-tag { color: var(--hl-selector-tag); }
+.markdown-body .hljs-selector-class { color: var(--hl-selector-class); }
+.markdown-body .hljs-selector-id { color: var(--hl-selector-id); }
+.markdown-body .hljs-selector-attr { color: var(--hl-selector-attr); }
+.markdown-body .hljs-addition { color: var(--hl-addition); }
+.markdown-body .hljs-deletion { color: var(--hl-deletion); }
+.markdown-body .hljs-emphasis { color: var(--hl-emphasis); font-style: italic; }
+.markdown-body .hljs-strong { color: var(--hl-strong); font-weight: 700; }
+.markdown-body .hljs-params { color: var(--hl-params); }
+.markdown-body .hljs-property { color: var(--hl-property); }
+.markdown-body .hljs-link { color: var(--hl-link); text-decoration: underline; }
+
+/* 行内代码（rehype-highlight 也会给它加 hljs class）保持「行内」观感，
+   不套用代码块的 token 配色。 */
+.markdown-body code.hljs {
+  padding: 2px 6px;
+  background: var(--surface-hover);
+  color: var(--brand);
+}
+
+/* 目录锚点跳转：给 sticky 导航栏（h-16 = 64px）留出空间，
+   否则 scrollIntoView 会把标题顶到导航栏下面看不见。 */
+.markdown-body h2[id],
+.markdown-body h3[id],
+.markdown-body h4[id] {
+  scroll-margin-top: 88px;
+}
+
+/* ============================================================
+   搜索结果高亮（<mark>）
+   ============================================================ */
+.markdown-body mark,
+mark.search-hit {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 600;
+}
