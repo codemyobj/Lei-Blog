@@ -342,3 +342,35 @@ docker run -d --name blog-pg \
 ```
 
 **1C1G 不建议部署**：PG 至少要 512MB 才不 swap，1G 机器会频繁 OOM。
+
+---
+
+## 13. 已知坑：服务器上 `npm ci` 后 client 构建必挂（原生二进制缺失）
+
+**现象**：`npm ci && npm run build` 报 `MODULE_NOT_FOUND`，指向
+`node_modules/rolldown/dist/shared/binding-*.mjs` 或 `node_modules/lightningcss/node/index.js`；
+且 `vite build` 一启动就会**清空 `dist/`**，失败后站点直接 404。
+
+**根因**：`package-lock.json` 是在 Windows 上生成的，npm 不会为其他平台补记
+`optionalDependencies` 的平台二进制。Linux 服务器上 `npm ci` / `npm install` 都会
+**静默跳过** `@rolldown/binding-linux-x64-gnu` 和 `lightningcss-linux-x64-gnu`，
+rolldown / lightningcss 找不到原生 binding 就崩。
+
+**处理**（构建前补装两个平台包，`--no-save` 不污染清单）：
+
+```bash
+cd /opt/lei-blog/client
+VITE_VER=$(node -p "require('./node_modules/vite/package.json').version")   # 8.1.0
+ROLLDOWN=$(node -p "require('./node_modules/rolldown/package.json').version")
+LCSS=$(node -p "require('./node_modules/lightningcss/package.json').version")
+npm install --no-save "@rolldown/binding-linux-x64-gnu@${ROLLDOWN}" "lightningcss-linux-x64-gnu@${LCSS}"
+npm run build
+```
+
+**两条铁律**：
+1. **构建前先备份 `dist/`**（`cp -a dist /opt/dist-bak-$(date +%Y%m%d)`），构建失败立刻回滚，
+   因为 vite 会先清空 outDir。
+2. **任何 `npm install` / `npm ci` 之后必须重装这两个包**，npm 会把它们剔除。
+
+**根治方案**（待做）：在 Linux 上重新生成一份 lockfile（会补上 linux 平台条目，
+且保留 win32 条目），提交后服务器即可直接 `npm ci`。
