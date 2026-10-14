@@ -4,6 +4,7 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
 import type { Components } from 'react-markdown'
 import { useTheme } from '../context/ThemeContext'
+import rehypeGallery from '../utils/rehypeGallery'
 
 const components: Components = {
   a: ({ href, children }) => (
@@ -12,7 +13,17 @@ const components: Components = {
     </a>
   ),
   img: ({ src, alt }) => (
-    <img src={src as string} alt={alt || ''} loading="lazy" />
+    <img
+      src={src as string}
+      alt={alt || ''}
+      loading="lazy"
+      /* 外链图加载失败时不显示浏览器的破图图标：
+         把 img 藏起来，让它所在容器的 --wash 底色兜底
+         （.md-gallery-item 有 aspect-ratio 撑住形状，单图则自然收起）。 */
+      onError={(event) => {
+        event.currentTarget.style.visibility = 'hidden'
+      }}
+    />
   ),
   // 显式透传 id：rehype-slug 生成的锚点必须落到 DOM 上，目录侧栏依赖它
   h1: ({ node: _node, ...rest }) => <h1 {...rest} />,
@@ -29,7 +40,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
     <div className={`markdown-body ${resolvedTheme === 'dark' ? 'dark-code' : 'light-code'}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight, rehypeSlug]}
+        rehypePlugins={[rehypeHighlight, rehypeGallery, rehypeSlug]}
         components={components}
       >
         {content || ''}

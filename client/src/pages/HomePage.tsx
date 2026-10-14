@@ -24,15 +24,16 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* 页头：标题 + 副标题 + 通栏强调线 */}
-      <div className="mb-12 sm:mb-16 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
-        <h1 className="text-3xl mb-2">
-          {t('home.title')}
-        </h1>
-        <p className="t-lead">
-          {t('home.subtitle')}
-        </p>
-      </div>
+      {/*
+        页头：杂志 masthead —— 红色 kicker（站点名 + 右侧延伸细线）
+        → 衬线 h1 → 导语。
+        不加通栏 border-b：编辑风页头靠 kicker 的细线收尾，不再压一条黑线。
+      */}
+      <header className="mb-12 sm:mb-16">
+        <p className="t-kicker mb-5">{t('nav.brand')}</p>
+        <h1 className="text-3xl mb-3">{t('home.title')}</h1>
+        <p className="t-lead max-w-[56ch]">{t('home.subtitle')}</p>
+      </header>
 
       {/* 加载中 */}
       {loading && <Spinner />}
@@ -51,8 +52,12 @@ export default function HomePage() {
             <EmptyState title={t('home.emptyTitle')} description={t('home.emptyDesc')} icon="📝" />
           ) : (
             <>
-              {/* 卡片之间用 gap-y-12(48px) 拉开，靠上强调线建立纵向韵律 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+              {/*
+                3 列杂志卡片网格（预览 .cards：3 列 / gap 26px）。
+                ⚠️ items-start：封面图为 NULL 的卡片没有图片区，必须让
+                   每张卡按自身内容取高 —— 否则会在行内被拉高，出现"空的高框"。
+              */}
+              <div className="grid grid-cols-1 items-start gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
                 {data.posts.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}

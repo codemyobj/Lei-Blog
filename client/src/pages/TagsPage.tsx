@@ -9,15 +9,16 @@ export default function TagsPage() {
 
   return (
     <div>
-      {/* 页头：去掉居中，改左对齐栅格 + 通栏强调线 */}
-      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
-        <h1 className="text-3xl mb-2">
+      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      <header className="mb-12">
+        <p className="t-kicker mb-5">{t('nav.tags')}</p>
+        <h1 className="text-3xl mb-3">
           {t('tags.title')}
         </h1>
-        <p className="t-lead">
+        <p className="t-lead max-w-[56ch]">
           {t('tags.subtitle', { count: tags.length })}
         </p>
-      </div>
+      </header>
 
       {loading && <Spinner />}
 

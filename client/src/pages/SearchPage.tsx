@@ -69,15 +69,16 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-3xl">
-      {/* 页头：标题 + 副标题 + 通栏强调线 */}
-      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
-        <h1 className="text-3xl mb-2">
+      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      <header className="mb-12">
+        <p className="t-kicker mb-5">{t('nav.search')}</p>
+        <h1 className="text-3xl mb-3">
           {t('search.title')}
         </h1>
-        <p className="t-lead">
+        <p className="t-lead max-w-[56ch]">
           {t('search.subtitle')}
         </p>
-      </div>
+      </header>
 
       {/* 搜索框：下划线式输入（Swiss 表单语汇） */}
       <form onSubmit={handleSubmit} className="mb-8" role="search">
@@ -100,7 +101,7 @@ export default function SearchPage() {
 
       {/* 结果统计（含服务端策略与耗时，便于确认降级是否生效） */}
       {hasQuery && data && !loading && (
-        <p className="text-meta mb-8" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-meta mb-8" style={{ color: 'var(--text-muted)' }}>
           {t('search.resultCount', { count: data.total, query })}
           <span className="ml-2 opacity-60">
             {t('search.meta', { ms: data.took_ms })}
@@ -162,7 +163,7 @@ export default function SearchPage() {
                     </p>
                   )}
                   <div
-                    className="flex flex-wrap items-center gap-3 text-meta"
+                    className="flex flex-wrap items-center gap-3 t-meta"
                     style={{ color: 'var(--text-muted)' }}
                   >
                     {result.published_at && <span>{formatDate(result.published_at)}</span>}

@@ -7,263 +7,18 @@
 //   必须在真实浏览器里跑。但本地没有 PostgreSQL，所以这里起一个**桩 API**（返回固定 fixture）
 //   与 dist 静态目录同源提供，再用 Chrome DevTools Protocol 驱动真实 Chrome 逐项断言。
 //   桩 API 只影响数据来源，不影响任何 CSS / 布局 / 主题逻辑 —— 本次改造全部在前端。
-import http from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
+// 桩服务与 fixture 抽到 stub-server.mjs，与 scripts/screenshot.mjs 单一来源共享，
+// 避免两处 fixture 漂移导致"断言过的页"和"截图的页"不是同一批数据。
+import { PORT, startServer } from './stub-server.mjs'
 
 const ROOT = path.resolve(import.meta.dirname, '..')
 const DIST = path.join(ROOT, 'dist')
-const PORT = 4178
 const CDP_PORT = 9333
-
-// ------------------------------------------------------------------ fixtures
-
-const CN_TITLE = '深入理解 React 虚拟列表原理'
-const CODE_BLOCK = [
-  '```js',
-  '// 计算可视区域',
-  "const LABEL = 'virtual-list'",
-  'function computeRange(scrollTop, itemHeight) {',
-  "  const start = Math.floor(scrollTop / itemHeight)",
-  "  return { start, end: start + 10 }",
-  '}',
-  '```',
-  '',
-  '```sql',
-  "SELECT id, title FROM posts WHERE slug = 'react-virtual-list' LIMIT 10;",
-  '```',
-].join('\n')
-
-const POST_CONTENT = [
-  '## 为什么需要虚拟列表',
-  '',
-  '当列表项超过 **1000** 条时，直接渲染会带来巨大的 DOM 开销。',
-  '',
-  '### 核心思路',
-  '',
-  '只渲染可视区域内的元素，其余用占位高度撑开。',
-  '',
-  CODE_BLOCK,
-  '',
-  '## 实现细节',
-  '',
-  '> 虚拟列表的关键是"滚动位置 → 索引区间"的映射。',
-  '',
-  '### 边界处理',
-  '',
-  '注意滚动到底部时的取整误差。',
-].join('\n')
-
-const POSTS = [
-  {
-    id: 1,
-    title: CN_TITLE,
-    slug: 'react-virtual-list',
-    excerpt: '只渲染可视区域内的元素，把 DOM 数量从 1000+ 降到 20 以内。',
-    content: POST_CONTENT,
-    cover_image: null,
-    status: 'published',
-    view_count: 1234,
-    published_at: '2026-08-12T00:00:00.000Z',
-    created_at: '2026-08-12T00:00:00.000Z',
-    updated_at: '2026-08-12T00:00:00.000Z',
-    tags: [{ id: 1, name: 'React', slug: 'react' }],
-    category: { id: 1, name: '前端', slug: 'frontend' },
-  },
-  {
-    id: 2,
-    title: 'Vite 构建优化笔记',
-    slug: 'vite-build-notes',
-    excerpt: '拆包、预构建与产物分析。',
-    content: '## 背景\n\n构建时间从 30s 降到 8s。\n\n```bash\nnpm run build -- --report\n```\n',
-    cover_image: null,
-    status: 'published',
-    view_count: 88,
-    published_at: '2026-03-02T00:00:00.000Z',
-    created_at: '2026-03-02T00:00:00.000Z',
-    updated_at: '2026-03-02T00:00:00.000Z',
-    tags: [{ id: 2, name: 'Vite', slug: 'vite' }],
-    category: { id: 1, name: '前端', slug: 'frontend' },
-  },
-  {
-    id: 3,
-    title: 'PostgreSQL 全文检索实践',
-    slug: 'postgres-fulltext',
-    excerpt: 'pg_trgm 与中文搜索。',
-    content: '## 背景\n\n中文没有词边界。\n',
-    cover_image: null,
-    status: 'published',
-    view_count: 42,
-    published_at: '2025-11-20T00:00:00.000Z',
-    created_at: '2025-11-20T00:00:00.000Z',
-    updated_at: '2025-11-20T00:00:00.000Z',
-    tags: [{ id: 3, name: '数据库', slug: 'database' }],
-    category: { id: 2, name: '后端', slug: 'backend' },
-  },
-]
-
-const CATEGORIES = [
-  { id: 1, name: '前端', slug: 'frontend', description: '浏览器里的一切', sort_order: 2, post_count: 2 },
-  { id: 2, name: '后端', slug: 'backend', description: '服务端与数据', sort_order: 1, post_count: 1 },
-]
-
-const TAGS = [
-  { id: 1, name: 'React', slug: 'react', post_count: 1 },
-  { id: 2, name: 'Vite', slug: 'vite', post_count: 1 },
-  { id: 3, name: '数据库', slug: 'database', post_count: 1 },
-]
-
-const toArch = (p) => ({ id: p.id, title: p.title, slug: p.slug, published_at: p.published_at })
-
-function searchResults(q, page, pageSize) {
-  const needle = q.toLowerCase()
-  const hit = POSTS.filter(
-    (p) =>
-      p.title.toLowerCase().includes(needle) ||
-      (p.excerpt ?? '').toLowerCase().includes(needle) ||
-      p.content.toLowerCase().includes(needle)
-  ).map((p) => ({
-    id: p.id,
-    title: p.title,
-    slug: p.slug,
-    excerpt: p.excerpt,
-    published_at: p.published_at,
-    score: 1,
-    tags: p.tags,
-    category: p.category,
-  }))
-  return {
-    results: hit,
-    total: hit.length,
-    page,
-    pageSize,
-    totalPages: Math.max(1, Math.ceil(hit.length / pageSize)),
-    took_ms: 1.23,
-    strategy: Array.from(q).length >= 3 ? 'trigram' : 'ilike',
-    used_english_tsvector: /[a-z]/i.test(q),
-  }
-}
-
-// ------------------------------------------------------------------ 桩服务
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.woff2': 'font/woff2',
-  '.svg': 'image/svg+xml',
-  '.json': 'application/json; charset=utf-8',
-}
-
-function startServer() {
-  const server = http.createServer((req, res) => {
-    const url = new URL(req.url, `http://127.0.0.1:${PORT}`)
-    const json = (body) => {
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
-      res.end(JSON.stringify(body))
-    }
-
-    // ---- 桩 API ----
-    if (url.pathname === '/api/health') return json({ status: 'ok' })
-    if (url.pathname === '/api/posts/archive') {
-      return json({ posts: POSTS.map(toArch), total: POSTS.length })
-    }
-    if (url.pathname === '/api/posts') {
-      const page = Number(url.searchParams.get('page') ?? 1)
-      const pageSize = Number(url.searchParams.get('pageSize') ?? 9)
-      const tag = url.searchParams.get('tag')
-      const category = url.searchParams.get('category')
-      let list = POSTS
-      if (tag) list = list.filter((p) => p.tags.some((t) => t.slug === tag))
-      if (category) list = list.filter((p) => p.category?.slug === category)
-      return json({
-        posts: list,
-        total: list.length,
-        page,
-        pageSize,
-        totalPages: Math.max(1, Math.ceil(list.length / pageSize)),
-      })
-    }
-    const postMatch = url.pathname.match(/^\/api\/posts\/([^/]+)$/)
-    if (postMatch) {
-      const post = POSTS.find((p) => p.slug === decodeURIComponent(postMatch[1]))
-      if (!post) {
-        res.writeHead(404, { 'Content-Type': 'application/json' })
-        return res.end(JSON.stringify({ error: '文章不存在' }))
-      }
-      return json({ post })
-    }
-    if (url.pathname === '/api/categories') return json({ categories: CATEGORIES })
-    const catMatch = url.pathname.match(/^\/api\/categories\/([^/]+)$/)
-    if (catMatch) {
-      const c = CATEGORIES.find((x) => x.slug === decodeURIComponent(catMatch[1]))
-      if (!c) {
-        res.writeHead(404, { 'Content-Type': 'application/json' })
-        return res.end(JSON.stringify({ error: '分类不存在' }))
-      }
-      return json({ category: c })
-    }
-    if (url.pathname === '/api/tags') return json({ tags: TAGS })
-    const tagMatch = url.pathname.match(/^\/api\/tags\/([^/]+)$/)
-    if (tagMatch) {
-      const name = decodeURIComponent(tagMatch[1])
-      const t = TAGS.find((x) => x.slug === name)
-      if (!t) {
-        res.writeHead(404, { 'Content-Type': 'application/json' })
-        return res.end(JSON.stringify({ error: '标签不存在' }))
-      }
-      return json({ tag: t, posts: POSTS.filter((p) => p.tags.some((x) => x.slug === t.slug)) })
-    }
-    if (url.pathname === '/api/search') {
-      const q = url.searchParams.get('q') ?? ''
-      if (!q.trim()) {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        return res.end(JSON.stringify({ error: '搜索关键词不能为空' }))
-      }
-      return json(searchResults(q, Number(url.searchParams.get('page') ?? 1), Number(url.searchParams.get('pageSize') ?? 10)))
-    }
-    if (url.pathname === '/api/about') {
-      return json({ about: { id: 1, content: '## 关于\n\n一个写博客的人。', updated_at: '2026-01-01T00:00:00.000Z' } })
-    }
-
-    // ---- 桩认证 + 后台接口：为了让真实 admin 页面能渲染，从而实测其标题字重 ----
-    if (url.pathname === '/api/auth/me') {
-      return json({
-        user: {
-          id: 1,
-          email: 'admin@example.com',
-          name: 'Admin',
-          created_at: '2026-01-01T00:00:00.000Z',
-          updated_at: '2026-01-01T00:00:00.000Z',
-        },
-      })
-    }
-    if (url.pathname === '/api/admin/posts') {
-      return json({ posts: POSTS, total: POSTS.length, page: 1, pageSize: 1000, totalPages: 1 })
-    }
-    if (url.pathname === '/api/admin/tags') return json({ tags: TAGS })
-    if (url.pathname === '/api/admin/about') {
-      return json({ about: { id: 1, content: '## 关于\n\n一个写博客的人。', updated_at: '2026-01-01T00:00:00.000Z' } })
-    }
-
-    // ---- dist 静态资源（SPA fallback） ----
-    let filePath = path.join(DIST, url.pathname)
-    if (!filePath.startsWith(DIST)) {
-      res.writeHead(403)
-      return res.end()
-    }
-    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-      filePath = path.join(DIST, 'index.html')
-    }
-    const ext = path.extname(filePath)
-    res.writeHead(200, { 'Content-Type': MIME[ext] ?? 'application/octet-stream' })
-    fs.createReadStream(filePath).pipe(res)
-  })
-  return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)))
-}
 
 // ------------------------------------------------------------------ CDP 客户端
 
@@ -521,8 +276,8 @@ async function themeProbe(cdp, theme, colorScheme) {
     atDCL: window.__atDCL,
     frames: window.__frames,
     darkFrames: window.__frames.filter(f => f.cls && f.cls.includes('dark')).length,
-    whiteFrames: window.__frames.filter(f => f.bg === 'rgb(255, 255, 255)').length,
-    blackFrames: window.__frames.filter(f => f.bg === 'rgb(11, 11, 11)').length,
+    whiteFrames: window.__frames.filter(f => f.bg === 'rgb(251, 249, 246)').length,
+    blackFrames: window.__frames.filter(f => f.bg === 'rgb(14, 13, 12)').length,
     totalFrames: window.__frames.length,
   }))()`)
 }
@@ -557,8 +312,8 @@ async function main() {
       `class="${dark.atDCL?.cls}"`
     )
     check(
-      'theme=dark：DCL 时 body 背景即为暗色 #0b0b0b',
-      dark.atDCL?.bg === 'rgb(11, 11, 11)',
+      'theme=dark：DCL 时 body 背景即为暗色 #0e0d0c（暖近黑，非瑞士冷黑）',
+      dark.atDCL?.bg === 'rgb(14, 13, 12)',
       dark.atDCL?.bg
     )
     check(
@@ -575,7 +330,7 @@ async function main() {
     const light = await themeProbe(cdp, 'light', 'dark')
     check(
       'theme=light 且系统为暗：DCL 时仍为亮色（用户显式选择优先）',
-      !(light.atDCL?.cls ?? '').includes('dark') && light.atDCL?.bg === 'rgb(255, 255, 255)',
+      !(light.atDCL?.cls ?? '').includes('dark') && light.atDCL?.bg === 'rgb(251, 249, 246)',
       `class="${light.atDCL?.cls}" bg=${light.atDCL?.bg}`
     )
     check(
@@ -587,7 +342,7 @@ async function main() {
     const sysDark = await themeProbe(cdp, 'system', 'dark')
     check(
       'theme=system 且系统为暗：首帧即为暗色（探针 DCL 校验）',
-      (sysDark.atDCL?.cls ?? '').includes('dark') && sysDark.atDCL?.bg === 'rgb(11, 11, 11)',
+      (sysDark.atDCL?.cls ?? '').includes('dark') && sysDark.atDCL?.bg === 'rgb(14, 13, 12)',
       `class="${sysDark.atDCL?.cls}" bg=${sysDark.atDCL?.bg}`
     )
     check(
@@ -599,14 +354,14 @@ async function main() {
     const sysLight = await themeProbe(cdp, 'system', 'light')
     check(
       'theme=system 且系统为亮：首帧即为亮色',
-      !(sysLight.atDCL?.cls ?? '').includes('dark') && sysLight.atDCL?.bg === 'rgb(255, 255, 255)',
+      !(sysLight.atDCL?.cls ?? '').includes('dark') && sysLight.atDCL?.bg === 'rgb(251, 249, 246)',
       `class="${sysLight.atDCL?.cls}" bg=${sysLight.atDCL?.bg}`
     )
 
     const dirty = await themeProbe(cdp, 'darkk', 'light')
     check(
       "脏数据 theme='darkk' 回落到 system（跟随系统亮色），首帧亮色",
-      !(dirty.atDCL?.cls ?? '').includes('dark') && dirty.atDCL?.bg === 'rgb(255, 255, 255)',
+      !(dirty.atDCL?.cls ?? '').includes('dark') && dirty.atDCL?.bg === 'rgb(251, 249, 246)',
       `class="${dirty.atDCL?.cls}" bg=${dirty.atDCL?.bg}`
     )
     check(
@@ -750,8 +505,8 @@ async function main() {
       )
     }
 
-    // ---------- 标题字体（Archivo 生效） ----------
-    console.log('\n--- 标题字体 Archivo 生效验证 ---')
+    // ---------- 标题字体（杂志化：显示衬线，Archivo 已移除） ----------
+    console.log('\n--- 标题字体：显示衬线生效 / Archivo 已退场 ---')
     await navigate(cdp, '/archive')
     const fontInfo = await cdp.evaluate(`(async () => {
       await document.fonts.ready
@@ -762,18 +517,22 @@ async function main() {
         h1Weight: h1 ? getComputedStyle(h1).fontWeight : null,
         h1LetterSpacing: h1 ? getComputedStyle(h1).letterSpacing : null,
         fonts: loaded,
-        checkFont: document.fonts.check('600 16px Archivo'),
       }
     })()`)
     check(
-      'h1 computed font-family 以 Archivo 开头',
-      (fontInfo.h1Family ?? '').startsWith('Archivo'),
+      'h1 computed font-family 以 Newsreader 开头（杂志化显示衬线，取代 Archivo）',
+      (fontInfo.h1Family ?? '').startsWith('Newsreader'),
       fontInfo.h1Family
     )
     check(
-      'Archivo 字体文件已被浏览器真正加载（document.fonts 中存在 loaded 条目）',
-      fontInfo.fonts.some((f) => f.startsWith('Archivo') && f.endsWith('loaded')),
-      fontInfo.fonts.join(' | ')
+      '显示衬线栈含中文系统宋体回退（Noto Serif SC / SimSun，中文零字节方案）',
+      /Noto Serif SC/.test(fontInfo.h1Family ?? '') && /SimSun/.test(fontInfo.h1Family ?? ''),
+      fontInfo.h1Family
+    )
+    check(
+      'Archivo 已彻底退场：document.fonts 中不再注册 Archivo（上一轮 38752 B 的资产已删）',
+      fontInfo.fonts.every((f) => !f.startsWith('Archivo')),
+      fontInfo.fonts.join(' | ') || '（无自托管字体条目）'
     )
     check(
       '标题负字距生效（h1 letter-spacing 为负值）',
@@ -781,8 +540,8 @@ async function main() {
       `letter-spacing=${fontInfo.h1LetterSpacing}`
     )
     check(
-      '标题字重由标题 CSS 规则决定：h1=700（约定：标题不带字重 utility）',
-      fontInfo.h1Weight === '700',
+      '标题字重由标题 CSS 规则决定：h1=600（杂志化统一 600，层级靠字号不靠字重）',
+      fontInfo.h1Weight === '600',
       `font-weight=${fontInfo.h1Weight}`
     )
 
@@ -804,9 +563,9 @@ async function main() {
       return r
     })()`)
     check(
-      '标题 CSS 规则生效：纯 <h2>=600、纯 <h3>=600、纯 <h1>=700',
-      cascade.plainH2 === '600' && cascade.plainH3 === '600' && cascade.plainH1 === '700',
-      `h2=${cascade.plainH2} h3=${cascade.plainH3} h1=${cascade.plainH1}`
+      '标题 CSS 规则生效：纯 <h1> / <h2> / <h3> 均为 600（杂志化统一字重）',
+      cascade.plainH2 === '600' && cascade.plainH3 === '600' && cascade.plainH1 === '600',
+      `h1=${cascade.plainH1} h2=${cascade.plainH2} h3=${cascade.plainH3}`
     )
     check(
       '<h2 class="font-bold"> 实测 700 —— 证伪"非分层护栏"：utility 在标题上真的会赢（故须靠约定禁用）',
@@ -835,8 +594,8 @@ async function main() {
       `path=${adminH.path} h2="${adminH.h2Text}" class="${adminH.h2Class}" weight=${adminH.h2Weight}`
     )
     check(
-      '真实 admin 页 <h1> 实测字重 = 700（与 CSS 一致，无 utility 干扰）',
-      adminH.h1Weight === '700',
+      '真实 admin 页 <h1> 实测字重 = 600（与 CSS 一致，无 utility 干扰）',
+      adminH.h1Weight === '600',
       `h1 weight=${adminH.h1Weight}`
     )
     await cdp.evaluate(`localStorage.removeItem('token')`)
@@ -856,29 +615,29 @@ async function main() {
       archive.years.length === 2 && archive.years.includes('2026') && archive.years.includes('2025'),
       `years=[${archive.years.join(', ')}]`
     )
-    check('归档页列出全部 3 篇文章', archive.count === 3, `链接数=${archive.count}`)
+    check('归档页列出全部 4 篇文章', archive.count === 4, `链接数=${archive.count}`)
 
     await navigate(cdp, '/categories')
     const categories = await cdp.evaluate(`(() => {
       const text = document.body.innerText
       const links = [...document.querySelectorAll('a[href^="/categories/"]')].map(a => a.getAttribute('href'))
-      return { links, text: text.slice(0, 200), hasFrontend: text.includes('前端') }
+      return { links, text: text.slice(0, 200), hasFrontend: text.includes('前端'), hasLife: text.includes('生活') }
     })()`)
     check(
-      '分类列表页渲染 2 个分类并带 post_count',
-      categories.links.length === 2 && categories.hasFrontend,
+      '分类列表页渲染 3 个分类（含新增「生活」）并带 post_count',
+      categories.links.length === 3 && categories.hasFrontend && categories.hasLife,
       `${categories.links.join(', ')}`
     )
 
     await navigate(cdp, '/categories/frontend')
     const catDetail = await cdp.evaluate(`(() => {
       const text = document.body.innerText
-      return { hasName: text.includes('前端'), cards: document.querySelectorAll('.card-flat').length }
+      return { hasName: text.includes('前端'), cards: document.querySelectorAll('.card-media').length }
     })()`)
     check(
-      '分类详情页渲染该分类下的文章卡片',
+      '分类详情页渲染该分类下的文章卡片（杂志卡片 .card-media）',
       catDetail.hasName && catDetail.cards === 2,
-      `card-flat 数=${catDetail.cards}`
+      `card-media 数=${catDetail.cards}`
     )
 
     // 搜索：中文 3 字以上（trigram）与 2 字（ilike）两种
@@ -918,7 +677,7 @@ async function main() {
       csrSafety.hasScriptTag === false
     )
 
-    // 文章详情 + 代码高亮 + TOC 中文锚点
+    // 文章详情 + 代码高亮 + TOC 中文锚点 + 杂志化元素
     await navigate(cdp, '/posts/react-virtual-list')
     const detail = await cdp.evaluate(`(() => {
       const h2 = [...document.querySelectorAll('.markdown-body h2[id]')].map(h => ({ id: h.id, text: h.textContent.trim() }))
@@ -928,12 +687,20 @@ async function main() {
       const kw = document.querySelector('.hljs-keyword')
       const str = document.querySelector('.hljs-string')
       const h1 = document.querySelector('main h1, article h1')
-      // 页眉元信息行 = 含"分钟阅读/min read"的那个 .t-eyebrow（不是 TOC 的 "On this page"）
-      const metaEyebrow = [...document.querySelectorAll('.t-eyebrow')]
+      const top = (el) => el ? el.getBoundingClientRect().top : null
+      // 开场红色 kicker（分类，含右侧延伸细线）
+      const kicker = document.querySelector('.t-kicker')
+      // 元信息行 = 含"分钟阅读/min read"的 .t-meta（不是 TOC 的 "On this page"）
+      const metaRow = [...document.querySelectorAll('.t-meta')]
         .find((e) => /分钟阅读|min read/i.test(e.textContent))
-      const metaAboveH1 = metaEyebrow && h1
-        ? metaEyebrow.getBoundingClientRect().top < h1.getBoundingClientRect().top
-        : false
+      // 首字下沉：读第一段的 ::first-letter 计算样式
+      const firstP = document.querySelector('.markdown-body > p:first-of-type')
+      const fl = firstP ? getComputedStyle(firstP, '::first-letter') : null
+      // 编号章节：读 h2 的 ::before 生成内容
+      const h2El = document.querySelector('.markdown-body h2')
+      const h2Before = h2El ? getComputedStyle(h2El, '::before') : null
+      // 红边引文
+      const bq = document.querySelector('.markdown-body blockquote')
       return {
         h2, h3, tocLinks,
         preCount: document.querySelectorAll('.markdown-body pre').length,
@@ -941,9 +708,29 @@ async function main() {
         hasKw: !!kw, hasStr: !!str,
         preHtml: pre ? pre.outerHTML.slice(0, 400) : null,
         codeCls: pre ? (pre.querySelector('code')?.className ?? null) : null,
-        eyebrowText: metaEyebrow ? metaEyebrow.textContent.trim().slice(0, 60) : null,
-        metaAboveH1,
         h1Text: h1 ? h1.textContent.trim().slice(0, 40) : null,
+        // 杂志化元素
+        kickerText: kicker ? kicker.textContent.trim() : null,
+        kickerColor: kicker ? getComputedStyle(kicker).color : null,
+        kickerAfterBg: kicker ? getComputedStyle(kicker, '::after').backgroundColor : null,
+        kickerAboveH1: kicker && h1 ? top(kicker) < top(h1) : false,
+        metaText: metaRow ? metaRow.textContent.trim().slice(0, 60) : null,
+        metaBelowH1: metaRow && h1 ? top(metaRow) > top(h1) : false,
+        ruleDoubleCount: document.querySelectorAll('.rule-double').length,
+        ruleDoubleTop: (() => {
+          const rd = document.querySelector('.rule-double')
+          return rd ? getComputedStyle(rd).borderTopWidth : null
+        })(),
+        dropCapFont: fl ? fl.fontFamily : null,
+        dropCapSize: fl ? fl.fontSize : null,
+        dropCapFloat: fl ? fl.float : null,
+        h2NumberContent: h2Before ? h2Before.content : null,
+        h2NumberColor: h2Before ? h2Before.color : null,
+        bqBorderLeft: bq ? getComputedStyle(bq).borderLeftColor : null,
+        bqBorderWidth: bq ? getComputedStyle(bq).borderLeftWidth : null,
+        bqFont: bq ? getComputedStyle(bq).fontFamily : null,
+        // NULL 封面约束：技术文（cover_image=null）不应渲染任何封面 figure
+        coverFigure: document.querySelectorAll('article figure.hairline-frame, main figure.hairline-frame').length,
         bodyText: document.body.innerText.slice(0, 120),
       }
     })()`)
@@ -967,7 +754,7 @@ async function main() {
       `样例=${detail.tocLinks.slice(0, 3).join(', ')}`
     )
     check(
-      'div.code 块渲染且圆角归零（Swiss）',
+      '代码块渲染且圆角归零（杂志化同样零圆角）',
       detail.preCount === 2 && detail.preBorderRadius === '0px',
       `pre 数=${detail.preCount} radius=${detail.preBorderRadius}`
     )
@@ -976,15 +763,112 @@ async function main() {
       detail.hasKw && detail.hasStr,
       `code class="${detail.codeCls}" | ${detail.preHtml}`
     )
+
+    // ---- 杂志化 8 元素（真机实测） ----
+    console.log('\n--- 杂志化编辑风：8 个视觉元素真机实测 ---')
     check(
-      '文章页眉标行（.t-eyebrow）含阅读时长且渲染在标题 h1 上方',
-      !!detail.eyebrowText &&
-        /分钟阅读|min read/i.test(detail.eyebrowText) &&
-        detail.metaAboveH1 === true,
-      `eyebrow="${detail.eyebrowText}" h1="${detail.h1Text}" above=${detail.metaAboveH1}`
+      '① 红色 kicker 渲染在标题上方（分类名 + 强调色 #E4002B 系）',
+      !!detail.kickerText && detail.kickerAboveH1 === true &&
+        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.kickerColor ?? ''),
+      `kicker="${detail.kickerText}" color=${detail.kickerColor} above=${detail.kickerAboveH1}`
+    )
+    check(
+      '① kicker ::after 延伸细线存在（background 非 transparent）',
+      !!detail.kickerAfterBg && detail.kickerAfterBg !== 'rgba(0, 0, 0, 0)',
+      `::after bg=${detail.kickerAfterBg}`
+    )
+    check(
+      '② 双细线（.rule-double）渲染，上边 3px 强调线，位于正文之前',
+      detail.ruleDoubleCount === 1 && detail.ruleDoubleTop === '3px',
+      `count=${detail.ruleDoubleCount} border-top=${detail.ruleDoubleTop}`
+    )
+    check(
+      '③ 编号章节：h2 的 ::before 生成 counter 编号且为强调色',
+      /counter\(section/.test(detail.h2NumberContent ?? '') &&
+        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.h2NumberColor ?? ''),
+      `content=${detail.h2NumberContent} color=${detail.h2NumberColor}`
+    )
+    check(
+      '④ 首字下沉：正文第一段 ::first-letter 为衬线 64px 且 float:left',
+      /Newsreader/.test(detail.dropCapFont ?? '') &&
+        detail.dropCapSize === '64px' &&
+        detail.dropCapFloat === 'left',
+      `font=${detail.dropCapFont} size=${detail.dropCapSize} float=${detail.dropCapFloat}`
+    )
+    check(
+      '⑤ 红边引文：blockquote 左 3px 强调色 + 衬线字体',
+      detail.bqBorderWidth === '3px' &&
+        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.bqBorderLeft ?? '') &&
+        /Newsreader/.test(detail.bqFont ?? ''),
+      `border-left=${detail.bqBorderWidth} ${detail.bqBorderLeft} font=${detail.bqFont}`
+    )
+    check(
+      '⑤ 元信息行（.t-meta）含阅读时长且渲染在标题 h1 下方（杂志 meta 语汇）',
+      !!detail.metaText &&
+        /分钟阅读|min read/i.test(detail.metaText) &&
+        detail.metaBelowH1 === true,
+      `meta="${detail.metaText}" below=${detail.metaBelowH1}`
+    )
+    check(
+      '⚠️ NULL 封面约束：cover_image=null 的技术文**不渲染任何封面 figure**（不塌陷、不破图）',
+      detail.coverFigure === 0,
+      `figure.hairline-frame 数=${detail.coverFigure}`
     )
 
-    // TOC 点击跳转真实性
+    // ---- 生活类文章：图集网格（rehypeGallery 从连续图片段落长出） ----
+    console.log('\n--- 生活类文章：正文图集网格（不改 schema） ---')
+    await navigate(cdp, '/posts/seven-days-in-the-mountains')
+    const gallery = await cdp.evaluate(`(() => {
+      const grid = document.querySelector('.markdown-body .md-gallery')
+      const items = grid ? [...grid.querySelectorAll('.md-gallery-item')] : []
+      const cols = grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').length : 0
+      const firstWide = items[0] ? items[0].classList.contains('wide') : false
+      const imgs = grid ? [...grid.querySelectorAll('img')].map(i => i.getAttribute('src')) : []
+      const bq = document.querySelector('.markdown-body blockquote')
+      const firstP = document.querySelector('.markdown-body > p:first-of-type')
+      const fl = firstP ? getComputedStyle(firstP, '::first-letter') : null
+      return {
+        gridCount: document.querySelectorAll('.markdown-body .md-gallery').length,
+        items: items.length,
+        cols,
+        firstWide,
+        imgs,
+        capCount: document.querySelectorAll('.markdown-body .md-gallery-cap').length,
+        coverFigure: document.querySelectorAll('article figure.hairline-frame, main figure.hairline-frame').length,
+        contentTop: document.querySelectorAll('article > *').length,
+        hasDropCap: fl ? fl.float === 'left' : false,
+        hasQuote: !!bq,
+        h2Count: document.querySelectorAll('.markdown-body h2').length,
+      }
+    })()`)
+    check(
+      '生活文：5 张连续图片段落被 rehypeGallery 收成 1 个 3 列图集（5 格，首格跨 2 列）',
+      gallery.gridCount === 1 && gallery.items === 5 && gallery.cols === 3 && gallery.firstWide === true,
+      `grid=${gallery.gridCount} items=${gallery.items} cols=${gallery.cols} firstWide=${gallery.firstWide}`
+    )
+    check(
+      '图集内 5 张图 src 全部指向站内（/img/g1..g5.svg），无破图',
+      gallery.imgs.length === 5 && gallery.imgs.every((s) => /^\/img\/g\d\.svg$/.test(s ?? '')),
+      `[${gallery.imgs.join(', ')}]`
+    )
+    check(
+      '图注（.md-gallery-cap）渲染 1 条',
+      gallery.capCount === 1,
+      `cap 数=${gallery.capCount}`
+    )
+    check(
+      '生活文同样受 NULL 封面约束：无封面 figure（正文直接以文字 + 图集开场）',
+      gallery.coverFigure === 0,
+      `figure.hairline-frame 数=${gallery.coverFigure}`
+    )
+    check(
+      '生活文首字下沉 + 红边引文 + 编号章节同样生效（编辑风跨文章类型一致）',
+      gallery.hasDropCap === true && gallery.hasQuote === true && gallery.h2Count === 2,
+      `dropCap=${gallery.hasDropCap} quote=${gallery.hasQuote} h2=${gallery.h2Count}`
+    )
+
+    // TOC 点击跳转真实性（回到技术文 —— 上一段把页面切到了生活文）
+    await navigate(cdp, '/posts/react-virtual-list')
     const scrollTest = await cdp.evaluate(`(() => {
       const link = [...document.querySelectorAll('a[href^="#"]')].find(a => a.getAttribute('href').includes('实现细节'))
       if (!link) return { ok: false, reason: '未找到目标 TOC 链接' }
@@ -1019,7 +903,7 @@ async function main() {
       comment.hasIframe === false && !!comment.sectionText && comment.sectionText.length > 10,
       `iframe=${comment.hasIframe} 文本="${(comment.sectionText ?? '').slice(0, 60)}"`
     )
-    check('评论区外围有 eyebrow 标题（Swiss 框架）', comment.hasEyebrow === true)
+    check('评论区外围有 eyebrow 标题（编辑风框架）', comment.hasEyebrow === true)
 
     // 404
     await navigate(cdp, '/definitely-not-a-page')
@@ -1028,8 +912,18 @@ async function main() {
 
     // ---------- §12 #10 无横向滚动 ----------
     console.log('\n--- §12 #10 五档宽度 × 中英双语：scrollWidth <= clientWidth ---')
-    const widths = [375, 640, 768, 1024, 1440]
-    const routes = ['/', '/archive', '/categories', '/categories/frontend', '/tags', '/about', '/search?q=虚拟列表', '/posts/react-virtual-list']
+    const widths = [320, 375, 768, 1024, 1440]
+    const routes = [
+      '/',
+      '/archive',
+      '/categories',
+      '/categories/frontend',
+      '/tags',
+      '/about',
+      '/search?q=虚拟列表',
+      '/posts/react-virtual-list',
+      '/posts/seven-days-in-the-mountains',
+    ]
 
     for (const lang of ['zh', 'en']) {
       for (const width of widths) {
@@ -1063,7 +957,7 @@ async function main() {
           }
         }
         check(
-          `${lang} @ ${width}px：8 条路由均无横向滚动`,
+          `${lang} @ ${width}px：9 条路由均无横向滚动`,
           bad.length === 0,
           bad.length ? bad.join(' || ') : '全部通过'
         )

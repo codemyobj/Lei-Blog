@@ -59,15 +59,28 @@ export default function PostDetailPage() {
           </Link>
 
           {/*
-            文章头部：Swiss 的 kicker/eyebrow 模式 —— 元信息行**移到标题上方**，
-            这是本次唯一一处结构性 JSX 调序。header 加下沿强调线。
+            文章头部：杂志开场 ——
+            红色 kicker（分类 + 右侧延伸细线）→ 衬线大标题 → 等宽元信息 → 标签。
+            取自已批准预览的 .kicker / h1.hero / .meta。
           */}
-          <header className="mb-8 pb-8 border-b" style={{ borderColor: 'var(--rule)' }}>
-            {/* 眉标行：日期 · 阅读时长 · 阅读量 · 分类 */}
-            <div className="t-eyebrow flex flex-wrap items-center gap-4 mb-4">
+          <header className="mb-8">
+            {post.category && (
+              <Link
+                to={`/categories/${post.category.slug}`}
+                className="t-kicker mb-5 hover:opacity-80"
+              >
+                {post.category.name}
+              </Link>
+            )}
+
+            {/* 文章标题：clamp(34px→60px)，衬线 600（字重由非分层 CSS 决定，不加 font-* utility） */}
+            <h1 className="text-post-title mb-5">{post.title}</h1>
+
+            {/* 元信息：等宽（预览 .meta） */}
+            <div className="t-meta flex flex-wrap items-center gap-5 mb-4" style={{ color: 'var(--text-muted)' }}>
               {post.published_at && (
                 <span className="flex items-center gap-1">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <line x1="16" y1="2" x2="16" y2="6" />
                     <line x1="8" y1="2" x2="8" y2="6" />
@@ -77,34 +90,20 @@ export default function PostDetailPage() {
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <polyline points="12 6 12 12 16 14" />
                 </svg>
                 {t('post.minutesRead', { count: readingTime })}
               </span>
               <span className="flex items-center gap-1">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
                 {t('post.viewsCount', { count: post.view_count })}
               </span>
-              {post.category && (
-                <Link
-                  to={`/categories/${post.category.slug}`}
-                  className="flex items-center gap-1 hover:opacity-70"
-                >
-                  <span aria-hidden="true">📁</span>
-                  {post.category.name}
-                </Link>
-              )}
             </div>
-
-            {/* 大字号标题（字重由非分层 CSS 决定：h1 = 700） */}
-            <h1 className="text-3xl sm:text-4xl mb-4">
-              {post.title}
-            </h1>
 
             {/* 标签 */}
             {post.tags && post.tags.length > 0 && (
@@ -116,12 +115,27 @@ export default function PostDetailPage() {
             )}
           </header>
 
-          {/* 封面图（无边距圆角） */}
+          {/*
+            大封面：16 : 8.2（预览 figure.cover）+ 内描边发丝线。
+            ⚠️ cover_image 为 NULL 时**整块不渲染** —— 绝不留一个空的高框，
+               也不出现破图占位。无图时标题下直接接双线，文章以文字开场。
+            外链图加载失败时 onError 把 img 藏起来，--wash 底色兜底。
+          */}
           {post.cover_image && (
-            <div className="mb-8 overflow-hidden">
-              <img src={post.cover_image} alt={post.title} className="w-full max-h-96 object-cover" />
-            </div>
+            <figure className="hairline-frame aspect-[16/8.2] mb-2">
+              <img
+                src={post.cover_image}
+                alt={post.title}
+                className="h-full w-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.style.visibility = 'hidden'
+                }}
+              />
+            </figure>
           )}
+
+          {/* 粗细双线：3px 粗线 + 5px 间距 + 1px 细线（预览 .dbl） */}
+          <div className="rule-double w-16 mt-7 mb-10" aria-hidden="true" />
 
           {/* 文章内容 */}
           <MarkdownRenderer content={post.content || ''} />
@@ -135,7 +149,7 @@ export default function PostDetailPage() {
             </Link>
           </div>
 
-          {/* 评论区：外围加瑞士式框架（Giscus 是跨域 iframe，外部 CSS 无法穿透，
+          {/* 评论区：外围加编辑风框架（Giscus 是跨域 iframe，外部 CSS 无法穿透，
               因此只做「上边线 + eyebrow 标题」的外围处理） */}
           <section className="mt-12 pt-8 border-t" style={{ borderColor: 'var(--rule)' }} aria-label={t('comment.title')}>
             <h2 className="t-eyebrow mb-4">

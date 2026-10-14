@@ -27,21 +27,22 @@ export default function TagDetailPage() {
   return (
     <div>
       {/* 面包屑 */}
-      <div className="mb-6 text-meta" style={{ color: 'var(--text-muted)' }}>
+      <div className="mb-6 t-meta" style={{ color: 'var(--text-muted)' }}>
         <Link to="/tags" className="hover:underline">{t('nav.tags')}</Link>
         <span className="mx-2">/</span>
         <span style={{ color: 'var(--text)' }}>#{tag.name}</span>
       </div>
 
-      {/* 页头：标题 + 副标题 + 通栏强调线 */}
-      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
-        <h1 className="text-3xl mb-2">
+      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      <header className="mb-12">
+        <p className="t-kicker mb-5">{t('nav.tags')}</p>
+        <h1 className="text-3xl mb-3">
           #{tag.name}
         </h1>
-        <p className="t-lead">
+        <p className="t-lead max-w-[56ch]">
           {t('tags.postCount', { count: posts.length })}
         </p>
-      </div>
+      </header>
 
       {/* 文章列表 */}
       {posts.length === 0 ? (

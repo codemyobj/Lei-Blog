@@ -13,15 +13,16 @@ export default function ArchivePage() {
 
   return (
     <div className="max-w-4xl">
-      {/* 页头：标题 + 副标题 + 通栏强调线 */}
-      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
-        <h1 className="text-3xl mb-2">
+      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      <header className="mb-12">
+        <p className="t-kicker mb-5">{t('nav.archive')}</p>
+        <h1 className="text-3xl mb-3">
           {t('archive.title')}
         </h1>
-        <p className="t-lead">
+        <p className="t-lead max-w-[56ch]">
           {t('archive.subtitle', { count: data.length })}
         </p>
-      </div>
+      </header>
 
       {loading && <Spinner />}
 
@@ -49,7 +50,7 @@ export default function ArchivePage() {
                 >
                   {group.year === 'unknown' ? t('archive.unknownYear') : group.year}
                 </h2>
-                <p className="text-meta mt-2" style={{ color: 'var(--text-muted)' }}>
+                <p className="t-meta mt-2" style={{ color: 'var(--text-muted)' }}>
                   {t('archive.postCount', { count: group.posts.length })}
                 </p>
               </div>
@@ -64,7 +65,7 @@ export default function ArchivePage() {
                     {/* 日期固定宽度，让标题左边缘对齐成一条线 */}
                     <time
                       dateTime={post.published_at ?? undefined}
-                      className="text-meta shrink-0 tabular-nums"
+                      className="t-meta shrink-0 tabular-nums"
                       style={{ color: 'var(--text-muted)', width: '5.5rem' }}
                     >
                       {post.published_at ? formatDate(post.published_at) : '—'}

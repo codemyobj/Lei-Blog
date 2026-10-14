@@ -1,4 +1,4 @@
-/* 标题字体（Archivo，自托管 woff2）。@import 必须在所有其它规则之前 */
+/* 显示衬线字体（Newsreader，自托管 woff2）。@import 必须在所有其它规则之前 */
 @import './styles/fonts.css';
 
 @tailwind base;
@@ -6,113 +6,114 @@
 @tailwind utilities;
 
 /* ============================================================
-   1. 设计令牌 —— 瑞士现代主义（亮 / 暗两套，同结构）
+   1. 设计令牌 —— 杂志化编辑风（亮 / 暗两套，同结构）
    ------------------------------------------------------------
    单一来源：全站颜色只在这里定义一次。
-   亮色底 = 纸白，暗色底 = 中性近黑（**刻意不用 slate 蓝灰**，
-   冷蓝与 Swiss 的中性纪律冲突）。
-   全站唯一彩色是 --brand（印刷红），蓝/绿/橙只保留在代码 token 与语义态里。
+   底色从瑞士风的"冷纸白"换成**暖纸**（#FBF9F6 / 微暖近黑 #0E0D0C），
+   发丝线也转暖（#E4DFD8 / #2E2A26）—— 这是编辑风的"纸张"语汇。
+   强调红 #E4002B 沿用瑞士风已验证的值（对暖纸 4.61:1，达标）。
+   全站唯一彩色是 --brand，蓝/绿/橙只保留在代码 token 与语义态里。
+   令牌名**刻意沿用瑞士风那套**，不重命名 —— 保住已验证的 a11y 成果与调用点。
    ============================================================ */
 @layer base {
   :root {
     /* --- 表面 --- */
-    --bg: #ffffff; /* 页面底 = 纸白。分隔靠线，不靠深浅 */
-    --surface: #ffffff; /* 面板底与 --bg 同值：Swiss 不用"浮层"深浅差 */
-    --surface-hover: #f2f2f2; /* 悬停填充、内联代码底、表头底 */
+    --bg: #fbf9f6; /* 页面底 = 暖纸。分隔靠线，不靠深浅 */
+    --surface: #ffffff; /* 卡片/面板底：比纸更亮一档，做出"贴在纸上"的层次 */
+    --surface-hover: #f4f0e9; /* 悬停填充、内联代码底、表头底 */
 
     /* --- 线 --- */
-    --border: #d8d8d8; /* 常规发丝线：卡片边、表格、输入框 */
-    --rule: #111111; /* 强调线：标题下划线、页头分隔、hr、footer 上沿 */
+    --border: #e4dfd8; /* 装饰性发丝线：卡片边、表格。暖色调 */
+    /* ⚠️ --border-strong：**表单控件边界**必须 ≥3:1（WCAG 1.4.11）。
+       装饰性发丝线 --border 不受 1.4.11 约束，故两者分开设。
+       实测：亮 #857E74 对 #FBF9F6 = 3.82:1；暗 #6E6862 对 #0E0D0C = 3.53:1。 */
+    --border-strong: #857e74;
+    --rule: #111111; /* 强调线：页头分隔、hr、编号章节上沿、footer 上沿 */
 
     /* --- 文字 --- */
-    --text: #111111; /* 标题 / 强调 / 正文输入   18.88:1 */
-    --text-secondary: #444444; /* 正文段落                9.74:1 */
-    --text-muted: #6b6b6b; /* 元信息 / 时间 / placeholder 5.33:1 */
+    --text: #111111; /* 标题 / 强调 / 正文输入   17.97:1 */
+    --text-secondary: #444444; /* 正文段落                9.27:1 */
+    --text-muted: #6b6b6b; /* 元信息 / 时间 / placeholder 5.07:1 */
 
     /* --- 强调（全站唯一彩色） --- */
-    --brand: #e4002b; /* 链接 / 焦点 / 激活线      4.85:1 */
+    --brand: #e4002b; /* kicker / 链接 / 焦点 / 编号   4.61:1 */
     --brand-hover: #c1001f; /* 实心按钮悬停 */
     --brand-fg: #ffffff; /* 强调填充上的文字         4.85:1 */
     --brand-soft: rgba(228, 0, 43, 0.1); /* 搜索命中底 */
 
-    /* --- 中性色块（原 --brand-light 的新语义） --- */
-    --wash: #f2f2f2; /* 引用块底 / 图标底板 —— 中性，不染强调色 */
+    /* --- 中性色块 --- */
+    --wash: #f1ede6; /* 图片占位底 / 图集空态底 / 图标底板 */
 
     /* --- 反相块（选中态 / 激活态） --- */
     --invert-bg: #111111;
     --invert-fg: #ffffff;
 
     /* --- 语义色（仅 admin 与错误态使用） --- */
-    --danger: #b3001b; /* 7.16:1（原 #ef4444 仅 3.76:1，修复既有违规） */
+    --danger: #b3001b; /* 7.55:1（对暖纸，复算见 scripts/verify-contrast.mjs） */
     --danger-soft: #fbeaec;
-    --warning: #8a5a00; /* 5.93:1（原 #f59e0b 上白字仅 2.15:1） */
-    --success: #14663c; /* 7.01:1（原 #10b981 上白字仅 2.54:1） */
+    --warning: #8a5a00; /* 6.05:1 */
+    --success: #14663c; /* 7.15:1 */
 
     /* --- 代码块 --- */
-    --code-bg: #f4f4f4;
-    --code-border: #d8d8d8;
+    --code-bg: #f3f0eb; /* 暖纸上的代码底 */
+    --code-border: #e4dfd8;
 
-    /* --- 代码 token（34 个 token 收敛为 4 个值，见 §3.4） --- */
-    --hl-fg: #111111; /* 默认文本 / 变量 / 参数 / 强调   on #F4F4F4 = 16.5:1 */
-    --hl-muted: #5a5a5a; /* 注释 / 引用 / meta              = 6.27:1 */
-    --hl-red: #b3001b; /* 关键字 / 类型 / tag / 删除行    = 6.40:1 */
-    --hl-blue: #0b5fa5; /* 字符串 / 数字 / 属性 / 正则     = 5.87:1 */
+    /* --- 代码 token（34 个 token 收敛为 4 个值） --- */
+    --hl-fg: #111111; /* 默认文本 / 变量 / 参数 / 强调   on #F3F0EB = 17.05:1 */
+    --hl-muted: #5a5a5a; /* 注释 / 引用 / meta              = 6.07:1 */
+    --hl-red: #b3001b; /* 关键字 / 类型 / tag / 删除行    = 6.30:1 */
+    --hl-blue: #0b5fa5; /* 字符串 / 数字 / 属性 / 正则     = 5.78:1 */
 
     /* --- 字体 --- */
-    --font-heading: 'Archivo', system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
-      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+    /* 显示衬线：拉丁 = Newsreader（自托管，仅 600 / opsz72 显示切），
+       中文 = 系统宋体栈（思源宋体实测最佳，SimSun 兜底；中文零字节） */
+    --font-display: 'Newsreader', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC',
+      'STSong', 'SimSun', Georgia, serif;
+    /* 等宽：meta / 编号 / 日期（杂志排版的元信息语汇） */
+    --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
   }
 
   .dark {
-    --bg: #0b0b0b; /* 中性近黑 */
-    --surface: #0b0b0b;
-    --surface-hover: #1a1a1a;
+    --bg: #0e0d0c; /* 微暖近黑（刻意不用 slate 蓝灰：冷蓝与暖纸语汇冲突） */
+    --surface: #171513;
+    --surface-hover: #221e1b;
 
-    --border: #2e2e2e;
-    --rule: #f5f5f5;
+    --border: #2e2a26;
+    /* 见 :root 同名令牌的说明；实测 3.53:1 */
+    --border-strong: #6e6862;
+    --rule: #f5f3f0;
 
-    --text: #f5f5f5; /* 18.05:1 */
-    --text-secondary: #b8b8b8; /* 9.92:1 */
-    --text-muted: #8a8a8a; /* 5.70:1 */
+    --text: #f5f3f0; /* 17.53:1 */
+    --text-secondary: #b8b3ad; /* 9.33:1 */
+    --text-muted: #8a857e; /* 5.30:1 */
 
-    --brand: #ff4d4d; /* 6.02:1 —— 同时满足"作文字"与"作填充"两种用法 */
+    --brand: #ff4d4d; /* 5.94:1 —— 同时满足"作文字"与"作填充"两种用法 */
     --brand-hover: #ff7070;
-    /* ⚠️ 暗色下强调填充上的字用**近黑**而非白：#fff 在 #FF4D4D 上只有 3.27:1。
-       因为 --brand 要同时满足"作文字 ≥4.5:1"（要求 L≥0.190）与
-       "作填充且字为白 ≥4.5:1"（要求 L≤0.183），两者数学上互斥；
-       把填充上的字改成近黑，一个 #FF4D4D 即可满足两种用法。 */
+    /* ⚠️ 暗色下强调填充上的字用**近黑**而非白：#fff 在 #FF4D4D 上只有 3.27:1。 */
     --brand-fg: #0b0b0b;
     --brand-soft: rgba(255, 77, 77, 0.16);
 
-    --wash: #1a1a1a;
+    --wash: #1f1c1a;
 
-    --invert-bg: #f5f5f5;
+    --invert-bg: #f5f3f0;
     --invert-fg: #0b0b0b;
 
-    --danger: #ff6b6b; /* 7.09:1 */
+    --danger: #ff6b6b; /* 7.28:1 */
     --danger-soft: #2a1012;
-    --warning: #f5c542; /* 12.13:1 */
-    --success: #4ade80; /* 11.30:1 */
+    --warning: #f5c542; /* 12.42:1 */
+    --success: #4ade80; /* 11.51:1 */
 
-    --code-bg: #141414;
-    --code-border: #2e2e2e;
+    --code-bg: #1b1917;
+    --code-border: #2e2a26;
 
-    --hl-fg: #f5f5f5; /* on #141414 = 15.5:1 */
-    --hl-muted: #9a9a9a; /* = 6.34:1 */
-    --hl-red: #ff6b6b; /* = 6.44:1 */
-    --hl-blue: #79c0ff; /* = 9.19:1 */
+    --hl-fg: #f5f3f0; /* on #1B1917 = 15.83:1 */
+    --hl-muted: #9a948c; /* = 5.83:1（比 --text-muted 亮，保证代码注释达标） */
+    --hl-red: #ff6b6b; /* = 6.32:1 */
+    --hl-blue: #79c0ff; /* = 9.01:1 */
 
-    --font-heading: 'Archivo', system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
-      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
-  }
-
-  /* @deprecated SWISS-MIGRATION: 迁移完成后删除。
-     原语义是「品牌色浅洗底」，新方案里激活态改用 --invert-*，剩下的用途
-     （引用块底 / admin 图标底板）应当是**中性**的 —— 继续用品牌色会污染"单强调色"纪律。
-     这里保留别名只为安全迁移，调用点已全部改为 --wash / --invert-*。 */
-  :root,
-  .dark {
-    --brand-light: var(--wash);
+    --font-display: 'Newsreader', 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC',
+      'STSong', 'SimSun', Georgia, serif;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
   }
 
   * {
@@ -132,7 +133,7 @@
 }
 
 /* ============================================================
-   2. 标题默认排印
+   2. 标题默认排印（衬线）
    ------------------------------------------------------------
    ⚠️ 真实机制（别再被 "Cascade Layers 非分层优先" 这个说法骗了）：
    Tailwind **v3** 会把 `@layer` 指令**展平**后再输出，
@@ -146,36 +147,32 @@
    ⇒ 因此本项目有一条**约定**（是约定，不是机制保证）：
       **标题元素（h1~h6）不得携带任何
       font-{bold,semibold,medium,normal,light,extrabold,thin} utility。**
-      字重一律由下面这段 CSS 单一决定：h1 = 700，h2/h3/h4 = 600。
+      字重一律由下面这段 CSS 单一决定：h1 = h2 = h3 = h4 = 600。
+      （杂志化编辑风统一 600：Newsreader 只自托管 600 显示切，见 fonts.css；
+        层级区分靠字号与颜色，不靠字重 —— 预览 h1.hero 也是 600。）
 
    想改某级标题的字重 → 改这里；不要在 JSX 上给标题加 font-* 类。
-   不要用 !important、也不要给这里加特异性 hack 去"抢回来"——
-   那只会让真实来源变模糊。审计命令：
-       grep -rn "<h[1-6][^>]*font-" client/src   （预期 0 命中）
+   不要用 !important、也不要给这里加特异性 hack 去"抢回来"。
+   审计命令：grep -rn "<h[1-6][^>]*font-" client/src   （预期 0 命中）
    ============================================================ */
 h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-heading);
+  font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   line-height: 1.2;
   color: var(--text);
   text-wrap: balance; /* 标题禁止孤行；不支持的浏览器静默忽略 */
 }
 
 h1 {
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-h2 {
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
 }
 
 /* ============================================================
-   3. 键盘焦点（无障碍改进 —— .btn 此前完全没有自定义焦点态）
+   3. 键盘焦点（无障碍）
    ============================================================ */
 :focus-visible {
   outline: 2px solid var(--brand);
@@ -188,14 +185,65 @@ h2 {
    ============================================================ */
 @layer components {
   /* --- 排版语义类 --- */
-  /* 全大写小标签：Swiss 版面的"眉标"，用来在标题上方给出分类/日期 */
+
+  /* 眉标：中性灰全大写小标签（TOC 标题、评论区标题这类"不抢戏"的场合） */
   .t-eyebrow {
     @apply inline-block text-eyebrow font-semibold uppercase;
     color: var(--text-muted);
   }
+
+  /* 红色 kicker：杂志文章的开场标签 —— 小号大写字距标签 + 右侧延伸细线。
+     取自已批准预览的 .kicker。用 block/flex 容器（div/p），别用在 h1~h6 上。 */
+  .t-kicker {
+    @apply flex items-center gap-2.5 text-eyebrow font-semibold uppercase;
+    color: var(--brand);
+  }
+  .t-kicker::after {
+    content: '';
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* 等宽元信息：日期 / 阅读时长 / 编号（杂志排版的 meta 语汇） */
+  .t-meta {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+  }
+
+  /* 内描边发丝线框：大封面 / 卡片封面 / 图集格共用。
+     用 ::after + inset box-shadow 而非 outline/border ——
+     不占布局空间，也不会与相邻元素的描边叠加变粗（预览 .cover::after / .g::after）。
+     宽高比与尺寸交给调用处的 aspect-* / w-* 工具类。 */
+  .hairline-frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--wash); /* 图未加载 / 加载失败时的兜底底色 */
+  }
+  .hairline-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 0 1px var(--border);
+    pointer-events: none; /* 不挡点击 / 拖拽 */
+  }
+
+  /* Lead / 文章导语：预览 .lede = 19px / 1.85 */
   .t-lead {
-    @apply text-lg;
+    font-size: 1.1875rem;
+    line-height: 1.85;
     color: var(--text-secondary);
+  }
+
+  /* 粗细双线：3px 粗线 + 5px 间距 + 1px 细线（预览 .dbl）。
+     宽度由调用处给（w-16 等），这里只定义线的构成。 */
+  .rule-double {
+    border-top: 3px solid var(--rule);
+    padding-top: 5px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 3px;
   }
 
   /* --- 按钮族 --- */
@@ -214,7 +262,7 @@ h2 {
   .btn-outline {
     background: transparent;
     color: var(--text);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
   }
   .btn-outline:hover:not(:disabled) {
     border-color: var(--rule);
@@ -223,7 +271,7 @@ h2 {
   .btn-danger {
     background: transparent;
     color: var(--danger);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
   }
   .btn-danger:hover:not(:disabled) {
     border-color: var(--danger);
@@ -239,34 +287,63 @@ h2 {
   }
 
   /* --- 卡片族 --- */
+  /* 基础卡：表面底 + 发丝线边框（预览 .card） */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 0;
-    box-shadow: none; /* 阴影全部取消 */
-    transition: border-color 0.15s;
+    box-shadow: none; /* 编辑风不要投影，层次靠表面明度差 */
+    transition: transform 0.18s ease, border-color 0.18s ease;
   }
+  /* 悬停 = 轻微上浮（杂志卡片惯用语），并让边框变清晰 */
   .card-hover:hover {
-    transform: none;
-    border-color: var(--rule); /* "浮起"改为"描边变深" */
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
   }
-  /* 规则索引块：只有上边一条强调线，无左右下边框 */
+  @media (prefers-reduced-motion: reduce) {
+    .card-hover:hover {
+      transform: none;
+    }
+  }
+
+  /* 规则索引块：只有上边一条强调线，无左右下边框（搜索结果/分类索引用） */
   .card-flat {
     border-top: 1px solid var(--rule);
     padding-top: 1.25rem;
     background: transparent;
-    transition: none;
+    transition: border-color 0.15s;
   }
   .card-flat:hover {
     border-top-color: var(--brand);
   }
 
+  /* 封面图卡片：杂志列表卡的主角是图（预览 .card + .im）。
+     无封面时**不渲染图片区**，由调用方决定，绝不留空框。 */
+  .card-media {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    overflow: hidden;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+  }
+  .card-media:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card-media:hover {
+      transform: none;
+    }
+  }
+
   /* --- 输入 --- */
+  /* ⚠️ 表单控件边界用 --border-strong（≥3:1，WCAG 1.4.11），不用装饰性 --border */
   .input {
     @apply w-full px-3.5 py-3 text-sm;
     background: var(--surface);
     color: var(--text);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 0;
     transition: border-color 0.15s, outline-color 0.15s;
   }
@@ -277,14 +354,14 @@ h2 {
     outline: 1px solid var(--brand);
     outline-offset: 0;
     border-color: var(--brand);
-    box-shadow: none; /* 取消原 0 0 0 4px 光晕：Swiss 不要光晕 */
+    box-shadow: none;
   }
-  /* 下划线式输入（搜索页用，Swiss 表单语汇） */
+  /* 下划线式输入（搜索页用） */
   .input-line {
     @apply w-full px-0 py-3 text-base bg-transparent;
     color: var(--text);
     border: 0;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid var(--border-strong);
     border-radius: 0;
   }
   .input-line:focus {
@@ -304,7 +381,7 @@ h2 {
     border-radius: 0;
   }
   .tag-badge:hover {
-    border-color: var(--rule);
+    border-color: var(--border-strong);
     background: var(--surface-hover);
   }
 
@@ -345,33 +422,52 @@ h2 {
 }
 
 /* ============================================================
-   5. Markdown 正文排版
+   5. Markdown 正文排版（杂志化）
    ------------------------------------------------------------
-   保持**非分层**（写在 @layer 之外）：它优先于 Tailwind utilities。
-   排查"给 .markdown-body 内部元素加 utility 不生效"时先想到这条。
-   标题的字重/字距/字体由第 2 节统一提供，这里只声明字号与间距。
+   保持**非分层**（写在 @layer 之外）：它靠**特异性**压过 utility
+   （.markdown-body h2 = 0,1,1 > .text-2xl = 0,1,0）—— 不是靠级联层，
+   本构建下 Tailwind v3 已把 @layer 展平（见第 2 节说明）。
+   标题的字体/字重由第 2 节统一提供，这里声明字号、间距与章节编号。
    ============================================================ */
 .markdown-body {
   color: var(--text-secondary);
   font-size: 16px;
   line-height: 1.75; /* 中文正文的行高舒适下限 */
-  max-width: 68ch; /* 瑞士式的舒适行宽 */
+  max-width: 66ch; /* 编辑风的舒适行宽（预览 .prose） */
   /* 渐进增强：Chromium 新版本会用上，不支持的浏览器静默忽略，无副作用 */
   text-spacing-trim: space-first;
   text-autospace: normal;
+  counter-reset: section; /* 编号章节的计数器 */
 }
+
 .markdown-body h1 {
   @apply mb-4 mt-10;
-  font-size: 2.25rem;
+  font-size: 1.6875rem; /* 27px：正文里不该出现比文章标题还大的 h1 */
 }
+
+/* 编号章节：上边 1px 强调线 + 等宽红色编号 + 衬线 h2（预览 .sechead / .secnum） */
 .markdown-body h2 {
-  @apply mb-3 mt-12 pb-2;
-  font-size: 1.5rem;
-  border-bottom: 1px solid var(--rule); /* 强调线，原为 --border */
+  @apply mb-3 mt-14;
+  padding-top: 0.875rem; /* 14px：rule 与标题的间距（预览 .sechead） */
+  border-top: 1px solid var(--rule);
+  font-size: 1.6875rem; /* 27px */
+  letter-spacing: -0.015em;
+  counter-increment: section;
 }
+.markdown-body h2::before {
+  content: counter(section, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--brand);
+  margin-bottom: 0.5rem;
+}
+
 .markdown-body h3 {
   @apply mb-3 mt-8;
-  font-size: 1.1875rem;
+  font-size: 1.1875rem; /* 19px */
 }
 .markdown-body h4 {
   @apply mb-2 mt-6;
@@ -407,24 +503,60 @@ h2 {
 .markdown-body a:hover {
   color: var(--brand-hover);
 }
+
+/* 红边引文：左 3px 强调色 + 衬线大字（预览 blockquote）。
+   不再用瑞士风的"黑竖线 + 中性洗底"，改成杂志引文的红边 + 无底。 */
 .markdown-body blockquote {
-  @apply my-6 pl-5 py-3;
-  border-left: 4px solid var(--rule); /* 黑粗竖线 */
-  background: var(--wash); /* 中性洗底，不再染品牌色 */
+  @apply my-8 py-1;
+  padding-left: 1.375rem;
+  border-left: 3px solid var(--brand);
+  background: transparent;
   border-radius: 0;
-  color: var(--text-secondary);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.4375rem; /* 23px */
+  line-height: 1.6;
+  /* Newsreader 只自托管 600 一个实例（控体积），衬线场景统一 600 */
+  font-weight: 600;
 }
 .markdown-body blockquote p {
   margin-bottom: 0;
+  color: inherit;
 }
+/* 引文署名 / 出处（Markdown 里写 <small> 或 <cite>） */
+.markdown-body blockquote small,
+.markdown-body blockquote cite {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+  font-weight: 400;
+}
+
+/* 首字下沉：正文**第一个段落**的首字放大、衬线、浮动（预览 .prose p.first）。
+   用 > p:first-of-type 而不是 .first 类 —— 不要求作者在 Markdown 里加标记。
+   ⚠️ ::first-letter 是 CSS 生成内容，不影响 extractToc / 锚点。 */
+.markdown-body > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  float: left;
+  font-size: 4rem; /* 64px */
+  line-height: 0.82;
+  font-weight: 600;
+  padding: 0.375rem 0.75rem 0 0;
+  color: var(--text);
+}
+
 .markdown-body code {
-  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 0.875em;
   padding: 1px 5px;
   background: var(--surface-hover);
   border: 1px solid var(--border);
   border-radius: 0;
-  color: var(--text); /* 原为 var(--brand)：亮色下 4.33:1 违规 */
+  color: var(--text);
 }
 .markdown-body pre {
   @apply my-6 p-5 overflow-x-auto;
@@ -440,8 +572,77 @@ h2 {
   font-size: 0.875rem;
   line-height: 1.7;
 }
+
+/* 单图：整宽 + 内描边发丝线（预览 figure.cover 的内描边语汇） */
+.markdown-body .md-figure {
+  @apply my-7;
+  position: relative;
+}
+.markdown-body .md-figure img {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+.markdown-body .md-figure figcaption {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 0.625rem;
+}
+
+/* 图集网格：3 列，横幅图跨 2 列（2:1），方图 1:1；每格内描边（预览 .grid / .g） */
+.markdown-body .md-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 1.75rem 0;
+}
+.markdown-body .md-gallery-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--wash); /* 图未加载/加载失败时的兜底底色 */
+  margin: 0;
+}
+.markdown-body .md-gallery-item.wide {
+  grid-column: span 2;
+  aspect-ratio: 2 / 1;
+}
+.markdown-body .md-gallery-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+}
+/* 网格项内描边：用 ::after 而非 outline，避免与相邻格子的描边叠加变粗 */
+.markdown-body .md-gallery-item::after,
+.markdown-body .md-figure::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px var(--border);
+  pointer-events: none; /* 不挡点击/拖拽 */
+}
+.markdown-body .md-gallery-cap {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 0.625rem;
+}
+/* 窄屏：3 列 → 2 列（预览 @media max-width:760px） */
+@media (max-width: 760px) {
+  .markdown-body .md-gallery {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .markdown-body img {
-  @apply max-w-full my-6;
+  @apply max-w-full;
   border-radius: 0;
 }
 .markdown-body table {
@@ -483,8 +684,6 @@ h2 {
    6. 代码 token 配色
    ------------------------------------------------------------
    34 个 --hl-* 收敛为**每主题 4 个颜色**（fg / 中性灰 / 红 / 蓝）。
-   理由：GitHub 原配色有 5-6 个色相，与 Swiss「单强调色 + 中性灰」冲突；
-   但代码 token 需要语义区分（关键字≠字符串≠注释），故取 3 色相 + 灰的折衷。
    每个 token 色对 --code-bg 的对比度均 ≥ 4.5:1（两套主题分别校验）。
    变量定义在第 1 节的 :root / .dark 里（单一来源）。
    ============================================================ */
@@ -613,7 +812,7 @@ h2 {
 .markdown-body mark,
 mark.search-hit {
   background: var(--brand-soft);
-  color: var(--text); /* 原为 var(--brand)：亮色下 4.07:1 违规 */
+  color: var(--text); /* 原为 var(--brand)：亮色下对比度不达标 */
   border-radius: 0;
   padding: 0 2px;
   font-weight: 600;

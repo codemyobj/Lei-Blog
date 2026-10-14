@@ -146,6 +146,11 @@ function buildChecks(theme, label, isDark) {
     [`${label} 代码 token --hl-muted on --code-bg`, T(theme, 'hl-muted'), codeBg, 4.5],
     [`${label} 代码 token --hl-red on --code-bg`, T(theme, 'hl-red'), codeBg, 4.5],
     [`${label} 代码 token --hl-blue on --code-bg`, T(theme, 'hl-blue'), codeBg, 4.5],
+    // 表单控件边界（WCAG 1.4.11：非文本 UI 组件边界需 ≥ 3:1）。
+    // 装饰性发丝线 --border 不受 1.4.11 约束，故只有 --border-strong 走这条。
+    // 阈值刻意用 3 而不是 4.5 —— 这是边界识别要求，不是文字可读要求。
+    [`${label} 表单控件边界 --border-strong on --bg`, T(theme, 'border-strong'), bg, 3],
+    [`${label} 表单控件边界 --border-strong on --surface`, T(theme, 'border-strong'), surface, 3],
   ]
 }
 
@@ -172,7 +177,7 @@ console.log('\n' + '='.repeat(78))
 console.log('亮 / 暗 令牌差异断言（§12 #8：无元素沿用另一主题的颜色）')
 console.log('='.repeat(78))
 const themeTokens = [
-  'bg', 'surface', 'surface-hover', 'border', 'rule', 'text', 'text-secondary',
+  'bg', 'surface', 'surface-hover', 'border', 'border-strong', 'rule', 'text', 'text-secondary',
   'text-muted', 'brand', 'brand-hover', 'brand-fg', 'wash', 'invert-bg', 'invert-fg',
   'danger', 'danger-soft', 'warning', 'success', 'code-bg', 'code-border',
   'hl-fg', 'hl-muted', 'hl-red', 'hl-blue',

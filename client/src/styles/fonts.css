@@ -1,10 +1,15 @@
 /* ============================================================
-   标题字体：Archivo（OFL 1.1，自托管，可变字重 600–700）
+   显示衬线字体：Newsreader（OFL 1.1，自托管，静态 wght 600 + opsz 72 显示切）
    ------------------------------------------------------------
    - 只声明**拉丁**区段：浏览器遇到 CJK 字符会直接跳到下一个字体族
-     （PingFang SC / Microsoft YaHei），既不会去"尝试" Archivo，也不会出豆腐块。
+     （Noto Serif SC / Songti SC / SimSun 等系统宋体），既不会去"尝试"
+     Newsreader，也不会出豆腐块。中文标题因此**零字节**。
    - 文件由 scripts/fetch-fonts.mjs + scripts/subset-fonts.sh 生成，
-     两文件合计 ~38KB（预算 < 40KB）。
+     两文件合计 25.81 KiB（预算 ≤ 45KB）。
+   - **只有 600 一个字重实例**：为控体积，opsz 轴已实例化到 72（显示切）、
+     wght 钉死 600。所以所有衬线场景（标题 / 引文 / 首字下沉）一律 600；
+     若某处写成 400，浏览器会拿 600 的字形渲染（不会合成变细），
+     为避免"声明的和渲染的不一致"，衬线处请显式写 600。
    - unicode-range 必须与子集化时用的 --unicodes 完全一致，否则会出现
      「声明覆盖但字形缺失」的不必要回退。
    - font-display: swap —— 立即用系统字体渲染，字体到位后替换；
@@ -12,20 +17,20 @@
    ============================================================ */
 
 @font-face {
-  font-family: 'Archivo';
+  font-family: 'Newsreader';
   font-style: normal;
-  font-weight: 600 700;
+  font-weight: 600;
   font-display: swap;
-  src: url('../assets/fonts/archivo-latin.woff2') format('woff2');
+  src: url('../assets/fonts/newsreader-latin.woff2') format('woff2');
   unicode-range: U+0020-007E, U+00A0-00A9, U+00AB-00B1, U+00B4, U+00B7, U+00BB,
     U+00BF, U+00C0-00FF, U+2013-2014, U+2018-201D, U+2026;
 }
 
 @font-face {
-  font-family: 'Archivo';
+  font-family: 'Newsreader';
   font-style: normal;
-  font-weight: 600 700;
+  font-weight: 600;
   font-display: swap;
-  src: url('../assets/fonts/archivo-latin-ext.woff2') format('woff2');
+  src: url('../assets/fonts/newsreader-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-017F;
 }
