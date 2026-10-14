@@ -31,10 +31,11 @@ function SetupHint() {
   const { t } = useTranslation()
   return (
     <div
-      className="rounded-2xl border border-dashed p-6 text-center"
+      className="border border-dashed p-6 text-center"
       style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
     >
-      <div className="text-3xl mb-3" aria-hidden="true">
+      {/* 圆角已归零；此处保留 text-2xl（原 text-3xl 在改后字号刻度下会从 30px 涨到 36px） */}
+      <div className="text-2xl mb-3" aria-hidden="true">
         💬
       </div>
       <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>

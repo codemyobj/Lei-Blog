@@ -105,16 +105,17 @@ export default function TocSidebar({
             <a
               href={`#${item.id}`}
               onClick={(event) => handleClick(event, item.id)}
-              className="block rounded-lg text-sm transition-colors"
+              className="block text-sm transition-colors"
               style={{
                 paddingLeft: item.level === 3 ? '1rem' : '0.5rem',
                 paddingRight: '0.5rem',
                 paddingTop: '0.375rem',
                 paddingBottom: '0.375rem',
-                color: active ? 'var(--brand)' : 'var(--text-secondary)',
-                background: active ? 'var(--brand-light)' : 'transparent',
+                /* 激活态用 --text + 2px 左线，不再用品牌色（单强调色纪律） */
+                color: active ? 'var(--text)' : 'var(--text-muted)',
+                background: 'transparent',
                 fontWeight: active ? 600 : 400,
-                borderLeft: active ? '2px solid var(--brand)' : '2px solid transparent',
+                borderLeft: active ? '2px solid var(--text)' : '2px solid transparent',
               }}
               aria-current={active ? 'true' : undefined}
             >
@@ -131,10 +132,7 @@ export default function TocSidebar({
       {/* 桌面端：右侧 sticky 侧栏 */}
       <div className="hidden lg:block">
         <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
-          <p
-            className="text-xs font-bold uppercase tracking-wide mb-3"
-            style={{ color: 'var(--text-muted)' }}
-          >
+          <p className="t-eyebrow mb-3">
             {t('toc.title')}
           </p>
           {renderList('desktop')}

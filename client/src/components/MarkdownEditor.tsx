@@ -107,7 +107,7 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
   const editorHeight = height - 44 // 减去工具栏高度
 
   return (
-    <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
+    <div className="overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
       {/* 工具栏 */}
       <div
         className="flex items-center gap-1 px-2 py-1.5 border-b flex-wrap"
@@ -119,7 +119,7 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
             type="button"
             onClick={() => runTool(tool)}
             title={tool.title}
-            className="w-8 h-8 rounded-lg text-sm font-mono font-bold flex items-center justify-center transition-colors hover:opacity-100"
+            className="w-8 h-8 text-sm font-mono font-bold flex items-center justify-center transition-colors hover:opacity-100"
             style={{ color: 'var(--text-secondary)', opacity: 0.7 }}
           >
             {tool.label}
@@ -133,10 +133,11 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className="px-3 py-1 rounded-lg text-xs font-semibold transition-colors"
+              className="px-3 py-1 text-xs font-semibold transition-colors"
               style={{
                 background: mode === m ? 'var(--brand)' : 'transparent',
-                color: mode === m ? '#fff' : 'var(--text-muted)',
+                /* 暗色下 --brand-fg 是近黑；#fff 在 #FF4D4D 上只有 3.27:1 */
+                color: mode === m ? 'var(--brand-fg)' : 'var(--text-muted)',
               }}
             >
               {m === 'edit' ? t('editor.edit') : m === 'split' ? t('editor.split') : t('editor.preview')}

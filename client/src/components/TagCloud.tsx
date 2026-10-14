@@ -24,16 +24,17 @@ export default function TagCloud({ tags }: { tags: Tag[] }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-3 justify-center py-8">
+    <div className="flex flex-wrap gap-3 py-8">
       {tags.map((tag) => (
         <Link
           key={tag.id}
           to={`/tags/${tag.slug}`}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold transition-all hover:scale-105"
+          /* 方签 + 中性描边：Swiss 的交互反馈靠线宽/颜色，不用位移与缩放 */
+          className="inline-flex items-center gap-1.5 px-4 py-2 font-semibold transition-colors hover:border-[color:var(--rule)]"
           style={{
             fontSize: getFontSize(tag.post_count || 0),
-            background: 'var(--brand-light)',
-            color: 'var(--brand)',
+            background: 'transparent',
+            color: 'var(--text)',
             border: '1px solid var(--border)',
           }}
         >

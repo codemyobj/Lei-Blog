@@ -36,7 +36,7 @@ export default function AboutPage() {
         <MarkdownRenderer content={about?.content || ''} />
 
         {about?.updated_at && (
-          <footer className="mt-12 pt-6 border-t text-xs text-center" style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}>
+          <footer className="mt-12 pt-6 border-t text-meta text-center" style={{ borderColor: 'var(--rule)', color: 'var(--text-muted)' }}>
             {t('about.lastUpdated', { date: formatDate(about.updated_at) })}
           </footer>
         )}

@@ -11,7 +11,7 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
 
   return (
     <div
-      className={`inline-flex items-center rounded-full p-0.5 text-xs font-semibold ${className}`}
+      className={`inline-flex items-center p-0.5 text-xs font-semibold ${className}`}
       style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
       role="group"
       aria-label="Language"
@@ -23,10 +23,11 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
             key={opt.code}
             type="button"
             onClick={() => i18n.changeLanguage(opt.code)}
-            className="px-2.5 py-1 rounded-full transition-colors"
+            className="px-2.5 py-1 transition-colors"
             style={{
               background: active ? 'var(--brand)' : 'transparent',
-              color: active ? '#fff' : 'var(--text-secondary)',
+              /* var(--brand-fg) 在暗色下是近黑：#fff 在 #FF4D4D 上只有 3.27:1 */
+              color: active ? 'var(--brand-fg)' : 'var(--text-secondary)',
             }}
             aria-pressed={active}
           >

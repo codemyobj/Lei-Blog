@@ -1,0 +1,31 @@
+/* ============================================================
+   标题字体：Archivo（OFL 1.1，自托管，可变字重 600–700）
+   ------------------------------------------------------------
+   - 只声明**拉丁**区段：浏览器遇到 CJK 字符会直接跳到下一个字体族
+     （PingFang SC / Microsoft YaHei），既不会去"尝试" Archivo，也不会出豆腐块。
+   - 文件由 scripts/fetch-fonts.mjs + scripts/subset-fonts.sh 生成，
+     两文件合计 ~38KB（预算 < 40KB）。
+   - unicode-range 必须与子集化时用的 --unicodes 完全一致，否则会出现
+     「声明覆盖但字形缺失」的不必要回退。
+   - font-display: swap —— 立即用系统字体渲染，字体到位后替换；
+     不用 block（最长 3s 空白，恶化 LCP/CLS），不用 optional（慢网首次不启用）。
+   ============================================================ */
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('../assets/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0-00A9, U+00AB-00B1, U+00B4, U+00B7, U+00BB,
+    U+00BF, U+00C0-00FF, U+2013-2014, U+2018-201D, U+2026;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url('../assets/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-017F;
+}

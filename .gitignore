@@ -30,4 +30,9 @@ client/dist/
 # Server
 server/dist/
 
+# 字体子集化的中间产物（可用 client/scripts/fetch-fonts.mjs 重新拉取）
+client/.fontraw/
+# 运行时验收脚本的临时 Chrome profile
+client/.tmpverify-chrome/
+
 .vercel

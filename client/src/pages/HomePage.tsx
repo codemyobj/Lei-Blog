@@ -24,12 +24,12 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* 页头 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+      {/* 页头：标题 + 副标题 + 通栏强调线 */}
+      <div className="mb-12 sm:mb-16 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
+        <h1 className="text-3xl mb-2">
           {t('home.title')}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-lead">
           {t('home.subtitle')}
         </p>
       </div>
@@ -51,7 +51,8 @@ export default function HomePage() {
             <EmptyState title={t('home.emptyTitle')} description={t('home.emptyDesc')} icon="📝" />
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* 卡片之间用 gap-y-12(48px) 拉开，靠上强调线建立纵向韵律 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
                 {data.posts.map((post) => (
                   <PostCard key={post.id} post={post} />
                 ))}

@@ -10,11 +10,12 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+      {/* 页头：去掉居中，改左对齐栅格 + 通栏强调线 */}
+      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
+        <h1 className="text-3xl mb-2">
           {t('category.title')}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-lead">
           {t('category.subtitle', { count: data.length })}
         </p>
       </div>
@@ -32,16 +33,15 @@ export default function CategoriesPage() {
       )}
 
       {!loading && !error && data.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
           {data.map((category) => (
             <Link
               key={category.id}
               to={`/categories/${category.slug}`}
-              className="card card-hover block p-6"
+              className="card-flat block group"
             >
               <h2
-                className="text-lg font-bold mb-2 flex items-center gap-2"
-                style={{ color: 'var(--text)' }}
+                className="text-lg mb-2 flex items-center gap-2 group-hover:text-[color:var(--brand)]"
               >
                 <span aria-hidden="true">📁</span>
                 {category.name}
@@ -51,7 +51,7 @@ export default function CategoriesPage() {
                   {category.description}
                 </p>
               )}
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-meta" style={{ color: 'var(--text-muted)' }}>
                 {t('category.postCount', { count: category.post_count ?? 0 })}
               </p>
             </Link>

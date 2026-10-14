@@ -42,14 +42,14 @@ export default function AdminLoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-2 mb-8">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="var(--brand)" />
-              <path d="M9 11h14M9 16h14M9 21h9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+              <rect width="32" height="32" rx="0" fill="var(--brand)" />
+              <path d="M9 11h14M9 16h14M9 21h9" stroke="var(--brand-fg)" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
             <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>{t('admin.loginTitle')}</span>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+            <div className="mb-4 p-3 text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
               {error}
             </div>
           )}

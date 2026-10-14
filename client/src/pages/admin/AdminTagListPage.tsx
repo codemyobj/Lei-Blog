@@ -93,7 +93,7 @@ export default function AdminTagListPage() {
             {editingTag ? t('admin.editTag') : t('admin.newTag')}
           </h2>
           {error && (
-            <div className="mb-3 p-3 rounded-xl text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+            <div className="mb-3 p-3 text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
               {error}
             </div>
           )}

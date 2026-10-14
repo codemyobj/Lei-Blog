@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#3377ff"/>
-  <path d="M9 11h14M9 16h14M9 21h9" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+  <!--
+    品牌标识：填充用品牌红 #E4002B（Swiss 换肤后 --brand 的亮色值），圆角归零（rx="0"）。
+    ⚠️ 这是**唯一**允许出现字面色值的文件：favicon 是静态资源，浏览器在标签页/书签中
+    渲染它，无法继承 CSS 变量，也无法随主题切换。
+    描边取「强调填充上的文字」的安全值 —— 亮色主题下的 --brand-fg（#FFFFFF），
+    在 #E4002B 上对比度 4.85:1，达标。
+  -->
+  <rect width="32" height="32" rx="0" fill="#E4002B"/>
+  <path d="M9 11h14M9 16h14M9 21h9" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
 </svg>

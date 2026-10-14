@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
               <Link key={stat.label} to={stat.to} className="card card-hover p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    className="w-10 h-10 flex items-center justify-center"
                     style={{ background: `color-mix(in srgb, ${stat.color} 15%, transparent)` }}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={stat.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -60,7 +60,7 @@ export default function AdminDashboardPage() {
           <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text)' }}>{t('admin.quickActions')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link to="/admin/posts/new" className="card card-hover p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--brand-light)' }}>
+              <div className="w-12 h-12 flex items-center justify-center" style={{ background: 'var(--wash)' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
               </div>
             </Link>
             <Link to="/admin/about" className="card card-hover p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'var(--brand-light)' }}>
+              <div className="w-12 h-12 flex items-center justify-center" style={{ background: 'var(--wash)' }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />

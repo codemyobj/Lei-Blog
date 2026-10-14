@@ -79,7 +79,7 @@ export default function ThemeSwitcher({
       <button
         type="button"
         onClick={toggleTheme}
-        className={`p-2 rounded-full transition-colors ${className}`}
+        className={`p-2 transition-colors ${className}`}
         style={{ color: 'var(--text-secondary)' }}
         title={`${t('theme.label')}：${labelOf(theme)}（→ ${nextLabel}）`}
         aria-label={`${t('theme.label')}：${labelOf(theme)}（→ ${nextLabel}）`}
@@ -93,7 +93,7 @@ export default function ThemeSwitcher({
 
   return (
     <div
-      className={`inline-flex items-center rounded-full p-0.5 ${className}`}
+      className={`inline-flex items-center p-0.5 ${className}`}
       style={{ background: 'var(--surface-hover)', border: '1px solid var(--border)' }}
       role="group"
       aria-label={t('theme.label')}
@@ -106,10 +106,11 @@ export default function ThemeSwitcher({
             key={option}
             type="button"
             onClick={() => setTheme(option)}
-            className="p-1.5 rounded-full transition-colors"
+            className="p-1.5 transition-colors"
             style={{
               background: active ? 'var(--brand)' : 'transparent',
-              color: active ? '#fff' : 'var(--text-secondary)',
+              /* 暗色下 --brand-fg 是近黑：#fff 在 #FF4D4D 上只有 3.27:1 */
+              color: active ? 'var(--brand-fg)' : 'var(--text-secondary)',
             }}
             title={labelOf(option)}
             aria-label={labelOf(option)}

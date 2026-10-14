@@ -9,11 +9,12 @@ export default function TagsPage() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+      {/* 页头：去掉居中，改左对齐栅格 + 通栏强调线 */}
+      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
+        <h1 className="text-3xl mb-2">
           {t('tags.title')}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-lead">
           {t('tags.subtitle', { count: tags.length })}
         </p>
       </div>

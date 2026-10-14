@@ -101,7 +101,7 @@ export default function AdminPostEditPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+        <div className="mb-4 p-3 text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
           {error}
         </div>
       )}
@@ -183,7 +183,9 @@ export default function AdminPostEditPage() {
                   className="btn text-xs flex-1"
                   style={{
                     background: status === 'draft' ? 'var(--warning)' : 'var(--surface)',
-                    color: status === 'draft' ? '#fff' : 'var(--text-secondary)',
+                    /* --brand-fg 是「有色填充上的文字」安全色：亮色为白、暗色为近黑。
+                       --warning 在暗色下是浅黄 #F5C542，白字仅 1.62:1，必须用近黑。 */
+                    color: status === 'draft' ? 'var(--brand-fg)' : 'var(--text-secondary)',
                     border: '1px solid var(--border)',
                   }}
                 >
@@ -194,7 +196,7 @@ export default function AdminPostEditPage() {
                   className="btn text-xs flex-1"
                   style={{
                     background: status === 'published' ? 'var(--success)' : 'var(--surface)',
-                    color: status === 'published' ? '#fff' : 'var(--text-secondary)',
+                    color: status === 'published' ? 'var(--brand-fg)' : 'var(--text-secondary)',
                     border: '1px solid var(--border)',
                   }}
                 >
@@ -216,10 +218,10 @@ export default function AdminPostEditPage() {
                     <button
                       key={tag.id}
                       onClick={() => toggleTag(tag.id)}
-                      className="text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
+                      className="text-xs px-3 py-1.5 font-semibold transition-colors"
                       style={{
                         background: selectedTagIds.includes(tag.id) ? 'var(--brand)' : 'var(--surface-hover)',
-                        color: selectedTagIds.includes(tag.id) ? '#fff' : 'var(--text-secondary)',
+                        color: selectedTagIds.includes(tag.id) ? 'var(--brand-fg)' : 'var(--text-secondary)',
                         border: '1px solid var(--border)',
                       }}
                     >

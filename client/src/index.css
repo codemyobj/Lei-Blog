@@ -1,47 +1,118 @@
+/* 标题字体（Archivo，自托管 woff2）。@import 必须在所有其它规则之前 */
+@import './styles/fonts.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================================
-   主题 CSS 变量（Tailwind darkMode: 'class' 配合）
+   1. 设计令牌 —— 瑞士现代主义（亮 / 暗两套，同结构）
+   ------------------------------------------------------------
+   单一来源：全站颜色只在这里定义一次。
+   亮色底 = 纸白，暗色底 = 中性近黑（**刻意不用 slate 蓝灰**，
+   冷蓝与 Swiss 的中性纪律冲突）。
+   全站唯一彩色是 --brand（印刷红），蓝/绿/橙只保留在代码 token 与语义态里。
    ============================================================ */
 @layer base {
   :root {
-    --bg: #f8fafc;
-    --surface: #ffffff;
-    --surface-hover: #f1f5f9;
-    --border: #e2e8f0;
-    --border-light: #f1f5f9;
-    --text: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
-    --brand: #3377ff;
-    --brand-hover: #1f57f5;
-    --brand-light: #eef6ff;
-    --brand-soft: rgba(51, 119, 255, 0.1);
-    --danger: #ef4444;
-    --danger-soft: #fef2f2;
-    --warning: #f59e0b;
-    --success: #10b981;
+    /* --- 表面 --- */
+    --bg: #ffffff; /* 页面底 = 纸白。分隔靠线，不靠深浅 */
+    --surface: #ffffff; /* 面板底与 --bg 同值：Swiss 不用"浮层"深浅差 */
+    --surface-hover: #f2f2f2; /* 悬停填充、内联代码底、表头底 */
+
+    /* --- 线 --- */
+    --border: #d8d8d8; /* 常规发丝线：卡片边、表格、输入框 */
+    --rule: #111111; /* 强调线：标题下划线、页头分隔、hr、footer 上沿 */
+
+    /* --- 文字 --- */
+    --text: #111111; /* 标题 / 强调 / 正文输入   18.88:1 */
+    --text-secondary: #444444; /* 正文段落                9.74:1 */
+    --text-muted: #6b6b6b; /* 元信息 / 时间 / placeholder 5.33:1 */
+
+    /* --- 强调（全站唯一彩色） --- */
+    --brand: #e4002b; /* 链接 / 焦点 / 激活线      4.85:1 */
+    --brand-hover: #c1001f; /* 实心按钮悬停 */
+    --brand-fg: #ffffff; /* 强调填充上的文字         4.85:1 */
+    --brand-soft: rgba(228, 0, 43, 0.1); /* 搜索命中底 */
+
+    /* --- 中性色块（原 --brand-light 的新语义） --- */
+    --wash: #f2f2f2; /* 引用块底 / 图标底板 —— 中性，不染强调色 */
+
+    /* --- 反相块（选中态 / 激活态） --- */
+    --invert-bg: #111111;
+    --invert-fg: #ffffff;
+
+    /* --- 语义色（仅 admin 与错误态使用） --- */
+    --danger: #b3001b; /* 7.16:1（原 #ef4444 仅 3.76:1，修复既有违规） */
+    --danger-soft: #fbeaec;
+    --warning: #8a5a00; /* 5.93:1（原 #f59e0b 上白字仅 2.15:1） */
+    --success: #14663c; /* 7.01:1（原 #10b981 上白字仅 2.54:1） */
+
+    /* --- 代码块 --- */
+    --code-bg: #f4f4f4;
+    --code-border: #d8d8d8;
+
+    /* --- 代码 token（34 个 token 收敛为 4 个值，见 §3.4） --- */
+    --hl-fg: #111111; /* 默认文本 / 变量 / 参数 / 强调   on #F4F4F4 = 16.5:1 */
+    --hl-muted: #5a5a5a; /* 注释 / 引用 / meta              = 6.27:1 */
+    --hl-red: #b3001b; /* 关键字 / 类型 / tag / 删除行    = 6.40:1 */
+    --hl-blue: #0b5fa5; /* 字符串 / 数字 / 属性 / 正则     = 5.87:1 */
+
+    /* --- 字体 --- */
+    --font-heading: 'Archivo', system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   }
 
   .dark {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface-hover: #334155;
-    --border: #334155;
-    --border-light: #1e293b;
-    --text: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #64748b;
-    --brand: #599fff;
-    --brand-hover: #8ec2ff;
-    --brand-light: #1e293b;
-    --brand-soft: rgba(89, 159, 255, 0.15);
-    --danger: #f87171;
-    --danger-soft: #450a0a;
-    --warning: #fbbf24;
-    --success: #34d399;
+    --bg: #0b0b0b; /* 中性近黑 */
+    --surface: #0b0b0b;
+    --surface-hover: #1a1a1a;
+
+    --border: #2e2e2e;
+    --rule: #f5f5f5;
+
+    --text: #f5f5f5; /* 18.05:1 */
+    --text-secondary: #b8b8b8; /* 9.92:1 */
+    --text-muted: #8a8a8a; /* 5.70:1 */
+
+    --brand: #ff4d4d; /* 6.02:1 —— 同时满足"作文字"与"作填充"两种用法 */
+    --brand-hover: #ff7070;
+    /* ⚠️ 暗色下强调填充上的字用**近黑**而非白：#fff 在 #FF4D4D 上只有 3.27:1。
+       因为 --brand 要同时满足"作文字 ≥4.5:1"（要求 L≥0.190）与
+       "作填充且字为白 ≥4.5:1"（要求 L≤0.183），两者数学上互斥；
+       把填充上的字改成近黑，一个 #FF4D4D 即可满足两种用法。 */
+    --brand-fg: #0b0b0b;
+    --brand-soft: rgba(255, 77, 77, 0.16);
+
+    --wash: #1a1a1a;
+
+    --invert-bg: #f5f5f5;
+    --invert-fg: #0b0b0b;
+
+    --danger: #ff6b6b; /* 7.09:1 */
+    --danger-soft: #2a1012;
+    --warning: #f5c542; /* 12.13:1 */
+    --success: #4ade80; /* 11.30:1 */
+
+    --code-bg: #141414;
+    --code-border: #2e2e2e;
+
+    --hl-fg: #f5f5f5; /* on #141414 = 15.5:1 */
+    --hl-muted: #9a9a9a; /* = 6.34:1 */
+    --hl-red: #ff6b6b; /* = 6.44:1 */
+    --hl-blue: #79c0ff; /* = 9.19:1 */
+
+    --font-heading: 'Archivo', system-ui, -apple-system, 'Segoe UI', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  }
+
+  /* @deprecated SWISS-MIGRATION: 迁移完成后删除。
+     原语义是「品牌色浅洗底」，新方案里激活态改用 --invert-*，剩下的用途
+     （引用块底 / admin 图标底板）应当是**中性**的 —— 继续用品牌色会污染"单强调色"纪律。
+     这里保留别名只为安全迁移，调用点已全部改为 --wash / --invert-*。 */
+  :root,
+  .dark {
+    --brand-light: var(--wash);
   }
 
   * {
@@ -52,34 +123,90 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'PingFang SC',
+      'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.2s, color 0.2s;
+    transition: background-color 0.15s, color 0.15s;
   }
 }
 
 /* ============================================================
-   通用组件样式
+   2. 标题默认排印
+   ------------------------------------------------------------
+   ⚠️ 这一段**刻意写在所有 @layer 之外**。
+   CSS Cascade Layers 规则：非分层样式优先于任何 @layer 内的样式。
+   因此这里的规则会**压过** Tailwind 的 @layer utilities，
+   从而让 h1~h4 无条件获得标题字体与负字距，无需在 JSX 里加类。
+   副作用：JSX 里已有的 font-bold / font-semibold 在标题上会**失效**
+   （字重统一由这里决定）—— 这是刻意的，避免"字重来源有两处"。
+   再次强调：不要为了"恢复 font-bold"加 !important 或改回分层写法。
+   ============================================================ */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text);
+  text-wrap: balance; /* 标题禁止孤行；不支持的浏览器静默忽略 */
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  letter-spacing: -0.025em;
+}
+
+/* ============================================================
+   3. 键盘焦点（无障碍改进 —— .btn 此前完全没有自定义焦点态）
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+
+/* ============================================================
+   4. 通用组件样式
    ============================================================ */
 @layer components {
+  /* --- 排版语义类 --- */
+  /* 全大写小标签：Swiss 版面的"眉标"，用来在标题上方给出分类/日期 */
+  .t-eyebrow {
+    @apply inline-block text-eyebrow font-semibold uppercase;
+    color: var(--text-muted);
+  }
+  .t-lead {
+    @apply text-lg;
+    color: var(--text-secondary);
+  }
+
+  /* --- 按钮族 --- */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold transition-colors duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed;
+    border-radius: 0;
+    letter-spacing: 0.01em;
   }
   .btn-primary {
     background: var(--brand);
-    color: #fff;
+    color: var(--brand-fg);
   }
   .btn-primary:hover:not(:disabled) {
     background: var(--brand-hover);
-    transform: translateY(-1px);
   }
   .btn-outline {
-    background: var(--surface);
+    background: transparent;
     color: var(--text);
     border: 1px solid var(--border);
   }
   .btn-outline:hover:not(:disabled) {
+    border-color: var(--rule);
     background: var(--surface-hover);
   }
   .btn-danger {
@@ -88,114 +215,171 @@
     border: 1px solid var(--border);
   }
   .btn-danger:hover:not(:disabled) {
-    background: var(--danger-soft);
     border-color: var(--danger);
+    background: var(--danger-soft);
   }
   .btn-ghost {
     background: transparent;
     color: var(--text-secondary);
   }
   .btn-ghost:hover:not(:disabled) {
-    background: var(--surface-hover);
     color: var(--text);
+    background: var(--surface-hover);
   }
 
+  /* --- 卡片族 --- */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 0;
+    box-shadow: none; /* 阴影全部取消 */
+    transition: border-color 0.15s;
   }
   .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: none;
+    border-color: var(--rule); /* "浮起"改为"描边变深" */
+  }
+  /* 规则索引块：只有上边一条强调线，无左右下边框 */
+  .card-flat {
+    border-top: 1px solid var(--rule);
+    padding-top: 1.25rem;
+    background: transparent;
+    transition: none;
+  }
+  .card-flat:hover {
+    border-top-color: var(--brand);
   }
 
+  /* --- 输入 --- */
   .input {
-    @apply w-full px-4 py-3 rounded-xl text-sm transition-all;
+    @apply w-full px-3.5 py-3 text-sm;
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
+    border-radius: 0;
+    transition: border-color 0.15s, outline-color 0.15s;
+  }
+  .input::placeholder {
+    color: var(--text-muted);
   }
   .input:focus {
-    outline: none;
+    outline: 1px solid var(--brand);
+    outline-offset: 0;
     border-color: var(--brand);
-    box-shadow: 0 0 0 4px var(--brand-soft);
+    box-shadow: none; /* 取消原 0 0 0 4px 光晕：Swiss 不要光晕 */
+  }
+  /* 下划线式输入（搜索页用，Swiss 表单语汇） */
+  .input-line {
+    @apply w-full px-0 py-3 text-base bg-transparent;
+    color: var(--text);
+    border: 0;
+    border-bottom: 2px solid var(--border);
+    border-radius: 0;
+  }
+  .input-line:focus {
+    outline: none;
+    border-bottom-color: var(--brand);
+  }
+  .input-line::placeholder {
+    color: var(--text-muted);
   }
 
+  /* --- 标签 --- */
   .tag-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-colors;
-    background: var(--brand-light);
-    color: var(--brand);
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium transition-colors;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0;
   }
   .tag-badge:hover {
-    background: var(--brand-soft);
+    border-color: var(--rule);
+    background: var(--surface-hover);
   }
 
+  /* --- 加载态（保留动效：与风格无关，加载指示需要动） --- */
   .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
     border-top-color: var(--brand);
-    border-radius: 50%;
+    border-radius: 50%; /* 保持真圆，唯一不归零的圆角 */
     animation: spin 0.7s linear infinite;
   }
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .skeleton {
-    background: linear-gradient(90deg, var(--surface-hover) 0%, var(--border) 50%, var(--surface-hover) 100%);
+    background: linear-gradient(
+      90deg,
+      var(--surface-hover) 0%,
+      var(--border) 50%,
+      var(--surface-hover) 100%
+    );
     background-size: 200% 100%;
     animation: shimmer 1.4s ease-in-out infinite;
-    border-radius: 8px;
+    border-radius: 0;
   }
   @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
   }
 }
 
 /* ============================================================
-   Markdown 渲染样式
+   5. Markdown 正文排版
+   ------------------------------------------------------------
+   保持**非分层**（写在 @layer 之外）：它优先于 Tailwind utilities。
+   排查"给 .markdown-body 内部元素加 utility 不生效"时先想到这条。
+   标题的字重/字距/字体由第 2 节统一提供，这里只声明字号与间距。
    ============================================================ */
 .markdown-body {
-  color: var(--text);
-  line-height: 1.8;
+  color: var(--text-secondary);
   font-size: 16px;
+  line-height: 1.75; /* 中文正文的行高舒适下限 */
+  max-width: 68ch; /* 瑞士式的舒适行宽 */
+  /* 渐进增强：Chromium 新版本会用上，不支持的浏览器静默忽略，无副作用 */
+  text-spacing-trim: space-first;
+  text-autospace: normal;
 }
 .markdown-body h1 {
-  @apply text-3xl font-bold mb-4 mt-8;
-  color: var(--text);
+  @apply mb-4 mt-10;
+  font-size: 2.25rem;
 }
 .markdown-body h2 {
-  @apply text-2xl font-bold mb-3 mt-6 pb-2;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
+  @apply mb-3 mt-12 pb-2;
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--rule); /* 强调线，原为 --border */
 }
 .markdown-body h3 {
-  @apply text-xl font-semibold mb-3 mt-5;
-  color: var(--text);
+  @apply mb-3 mt-8;
+  font-size: 1.1875rem;
 }
 .markdown-body h4 {
-  @apply text-lg font-semibold mb-2 mt-4;
-  color: var(--text);
+  @apply mb-2 mt-6;
+  font-size: 1rem;
 }
 .markdown-body p {
-  @apply mb-4;
+  @apply mb-5;
   color: var(--text-secondary);
 }
 .markdown-body ul {
-  @apply mb-4 pl-6 list-disc;
+  @apply mb-5 pl-6 list-disc;
   color: var(--text-secondary);
 }
 .markdown-body ol {
-  @apply mb-4 pl-6 list-decimal;
+  @apply mb-5 pl-6 list-decimal;
   color: var(--text-secondary);
 }
 .markdown-body li {
-  @apply mb-1;
+  @apply mb-1.5;
 }
 .markdown-body strong {
   color: var(--text);
@@ -206,16 +390,17 @@
 }
 .markdown-body a {
   color: var(--brand);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .markdown-body a:hover {
-  text-decoration: underline;
+  color: var(--brand-hover);
 }
 .markdown-body blockquote {
-  @apply my-4 pl-4 py-2;
-  border-left: 4px solid var(--brand);
-  background: var(--brand-light);
-  border-radius: 0 8px 8px 0;
+  @apply my-6 pl-5 py-3;
+  border-left: 4px solid var(--rule); /* 黑粗竖线 */
+  background: var(--wash); /* 中性洗底，不再染品牌色 */
+  border-radius: 0;
   color: var(--text-secondary);
 }
 .markdown-body blockquote p {
@@ -224,263 +409,59 @@
 .markdown-body code {
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
   font-size: 0.875em;
-  padding: 2px 6px;
+  padding: 1px 5px;
   background: var(--surface-hover);
-  border-radius: 6px;
-  color: var(--brand);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--text); /* 原为 var(--brand)：亮色下 4.33:1 违规 */
 }
 .markdown-body pre {
-  @apply my-4 p-4 rounded-xl overflow-x-auto;
-  /* 原来是写死的 #0d1117（暗色）：亮色模式下会出现「深色底 + 深色 token」，
-     等于高亮完全不可读。改为变量驱动，与 hljs token 配色同步切换。 */
+  @apply my-6 p-5 overflow-x-auto;
   background: var(--code-bg);
   border: 1px solid var(--code-border);
+  border-radius: 0;
 }
 .markdown-body pre code {
   background: transparent;
+  border: 0;
   padding: 0;
   color: var(--hl-fg);
-  font-size: 0.875em;
+  font-size: 0.875rem;
+  line-height: 1.7;
 }
 .markdown-body img {
-  @apply max-w-full rounded-xl my-4;
+  @apply max-w-full my-6;
+  border-radius: 0;
 }
 .markdown-body table {
-  @apply w-full my-4 border-collapse;
+  @apply w-full my-6 border-collapse;
 }
 .markdown-body th,
 .markdown-body td {
-  @apply px-4 py-2 border text-left;
-  border-color: var(--border);
+  @apply px-3 py-2 text-left;
+  border: 1px solid var(--border);
 }
 .markdown-body th {
   background: var(--surface-hover);
   font-weight: 700;
   color: var(--text);
+  border-bottom: 2px solid var(--rule);
 }
 .markdown-body td {
   color: var(--text-secondary);
 }
 .markdown-body hr {
-  @apply my-6 border-0;
-  border-top: 1px solid var(--border);
+  @apply my-8 border-0;
+  border-top: 1px solid var(--rule);
 }
-.markdown-body input[type="checkbox"] {
+.markdown-body input[type='checkbox'] {
   @apply mr-2;
 }
 
-/* ============================================================
-   highlight.js token 配色（变量驱动，light / dark 两套）
-   ------------------------------------------------------------
-   为什么手写而不引官方主题文件：
-   官方主题（github.css / github-dark.css）是**全局作用域**的，无法加 `.dark` 前缀，
-   同时引入两个会按 CSS 顺序互相覆盖，暗色永远赢不了。因此这里自己维护两份变量：
-   `:root` = 亮色，`.dark` = 暗色，靠 <html class="dark"> 切换。
-
-   同时把 pre 背景也改成变量驱动（原来是写死的 #0d1117）：
-   否则亮色模式下会是「深色背景 + 深色 token」，等于高亮不可读。
-
-   变量命名沿用 GitHub 官方配色的语义，保证两套之间**每个 token 都不同色**。
-   ============================================================ */
-@layer base {
-  :root {
-    --code-bg: #f6f8fa;
-    --code-border: #e2e8f0;
-    --hl-fg: #24292e;
-    --hl-comment: #6a737d;
-    --hl-keyword: #d73a49;
-    --hl-string: #032f62;
-    --hl-number: #005cc5;
-    --hl-function: #6f42c1;
-    --hl-title: #6f42c1;
-    --hl-attr: #005cc5;
-    --hl-built_in: #e36209;
-    --hl-literal: #005cc5;
-    --hl-type: #d73a49;
-    --hl-variable: #e36209;
-    --hl-tag: #22863a;
-    --hl-name: #22863a;
-    --hl-attribute: #6f42c1;
-    --hl-regexp: #032f62;
-    --hl-meta: #6a737d;
-    --hl-symbol: #005cc5;
-    --hl-bullet: #005cc5;
-    --hl-section: #005cc5;
-    --hl-selector-tag: #22863a;
-    --hl-selector-class: #6f42c1;
-    --hl-selector-id: #6f42c1;
-    --hl-selector-attr: #005cc5;
-    --hl-addition: #22863a;
-    --hl-deletion: #d73a49;
-    --hl-emphasis: #24292e;
-    --hl-strong: #24292e;
-    --hl-quote: #6a737d;
-    --hl-params: #24292e;
-    --hl-property: #005cc5;
-    --hl-link: #032f62;
-  }
-
-  .dark {
-    --code-bg: #0d1117;
-    --code-border: #30363d;
-    --hl-fg: #e6edf3;
-    --hl-comment: #8b949e;
-    --hl-keyword: #ff7b72;
-    --hl-string: #a5d6ff;
-    --hl-number: #79c0ff;
-    --hl-function: #d2a8ff;
-    --hl-title: #d2a8ff;
-    --hl-attr: #79c0ff;
-    --hl-built_in: #ffa657;
-    --hl-literal: #79c0ff;
-    --hl-type: #ff7b72;
-    --hl-variable: #ffa657;
-    --hl-tag: #7ee787;
-    --hl-name: #7ee787;
-    --hl-attribute: #d2a8ff;
-    --hl-regexp: #a5d6ff;
-    --hl-meta: #8b949e;
-    --hl-symbol: #79c0ff;
-    --hl-bullet: #79c0ff;
-    --hl-section: #79c0ff;
-    --hl-selector-tag: #7ee787;
-    --hl-selector-class: #d2a8ff;
-    --hl-selector-id: #d2a8ff;
-    --hl-selector-attr: #79c0ff;
-    --hl-addition: #7ee787;
-    --hl-deletion: #ff7b72;
-    --hl-emphasis: #e6edf3;
-    --hl-strong: #e6edf3;
-    --hl-quote: #8b949e;
-    --hl-params: #e6edf3;
-    --hl-property: #79c0ff;
-    --hl-link: #a5d6ff;
-  }
-}
-
-/* MarkdownRenderer 会额外挂 light-code / dark-code class，
-   这里让它们也定义一遍同名变量，作为「.dark 缺失时」的兜底（两者取值一致，不会打架）。 */
-.light-code {
-  --code-bg: #f6f8fa;
-  --hl-fg: #24292e;
-  --hl-comment: #6a737d;
-  --hl-keyword: #d73a49;
-  --hl-string: #032f62;
-  --hl-number: #005cc5;
-  --hl-function: #6f42c1;
-  --hl-title: #6f42c1;
-  --hl-attr: #005cc5;
-  --hl-built_in: #e36209;
-  --hl-literal: #005cc5;
-  --hl-type: #d73a49;
-  --hl-variable: #e36209;
-  --hl-tag: #22863a;
-  --hl-name: #22863a;
-  --hl-attribute: #6f42c1;
-  --hl-regexp: #032f62;
-  --hl-meta: #6a737d;
-  --hl-symbol: #005cc5;
-  --hl-bullet: #005cc5;
-  --hl-section: #005cc5;
-  --hl-selector-tag: #22863a;
-  --hl-selector-class: #6f42c1;
-  --hl-selector-id: #6f42c1;
-  --hl-selector-attr: #005cc5;
-  --hl-addition: #22863a;
-  --hl-deletion: #d73a49;
-  --hl-emphasis: #24292e;
-  --hl-strong: #24292e;
-  --hl-quote: #6a737d;
-  --hl-params: #24292e;
-  --hl-property: #005cc5;
-  --hl-link: #032f62;
-}
-
-.dark-code {
-  --code-bg: #0d1117;
-  --hl-fg: #e6edf3;
-  --hl-comment: #8b949e;
-  --hl-keyword: #ff7b72;
-  --hl-string: #a5d6ff;
-  --hl-number: #79c0ff;
-  --hl-function: #d2a8ff;
-  --hl-title: #d2a8ff;
-  --hl-attr: #79c0ff;
-  --hl-built_in: #ffa657;
-  --hl-literal: #79c0ff;
-  --hl-type: #ff7b72;
-  --hl-variable: #ffa657;
-  --hl-tag: #7ee787;
-  --hl-name: #7ee787;
-  --hl-attribute: #d2a8ff;
-  --hl-regexp: #a5d6ff;
-  --hl-meta: #8b949e;
-  --hl-symbol: #79c0ff;
-  --hl-bullet: #79c0ff;
-  --hl-section: #79c0ff;
-  --hl-selector-tag: #7ee787;
-  --hl-selector-class: #d2a8ff;
-  --hl-selector-id: #d2a8ff;
-  --hl-selector-attr: #79c0ff;
-  --hl-addition: #7ee787;
-  --hl-deletion: #ff7b72;
-  --hl-emphasis: #e6edf3;
-  --hl-strong: #e6edf3;
-  --hl-quote: #8b949e;
-  --hl-params: #e6edf3;
-  --hl-property: #79c0ff;
-  --hl-link: #a5d6ff;
-}
-
-/* --- token 规则：一个 class 一条规则，各自指向自己的变量 ---
-   这样切换 <html class="dark"> 时整套配色一次生效，且每个 token 在两套主题下都不同色。 */
-.markdown-body .hljs {
-  color: var(--hl-fg);
-  background: transparent;
-}
-.markdown-body .hljs-comment { color: var(--hl-comment); font-style: italic; }
-.markdown-body .hljs-quote { color: var(--hl-quote); font-style: italic; }
-.markdown-body .hljs-keyword { color: var(--hl-keyword); }
-.markdown-body .hljs-string { color: var(--hl-string); }
-.markdown-body .hljs-number { color: var(--hl-number); }
-.markdown-body .hljs-function { color: var(--hl-function); }
-.markdown-body .hljs-title { color: var(--hl-title); }
-.markdown-body .hljs-attr { color: var(--hl-attr); }
-.markdown-body .hljs-attribute { color: var(--hl-attribute); }
-.markdown-body .hljs-built_in { color: var(--hl-built_in); }
-.markdown-body .hljs-literal { color: var(--hl-literal); }
-.markdown-body .hljs-type { color: var(--hl-type); }
-.markdown-body .hljs-variable { color: var(--hl-variable); }
-.markdown-body .hljs-template-variable { color: var(--hl-variable); }
-.markdown-body .hljs-tag { color: var(--hl-tag); }
-.markdown-body .hljs-name { color: var(--hl-name); }
-.markdown-body .hljs-regexp { color: var(--hl-regexp); }
-.markdown-body .hljs-meta { color: var(--hl-meta); }
-.markdown-body .hljs-symbol { color: var(--hl-symbol); }
-.markdown-body .hljs-bullet { color: var(--hl-bullet); }
-.markdown-body .hljs-section { color: var(--hl-section); font-weight: 600; }
-.markdown-body .hljs-selector-tag { color: var(--hl-selector-tag); }
-.markdown-body .hljs-selector-class { color: var(--hl-selector-class); }
-.markdown-body .hljs-selector-id { color: var(--hl-selector-id); }
-.markdown-body .hljs-selector-attr { color: var(--hl-selector-attr); }
-.markdown-body .hljs-addition { color: var(--hl-addition); }
-.markdown-body .hljs-deletion { color: var(--hl-deletion); }
-.markdown-body .hljs-emphasis { color: var(--hl-emphasis); font-style: italic; }
-.markdown-body .hljs-strong { color: var(--hl-strong); font-weight: 700; }
-.markdown-body .hljs-params { color: var(--hl-params); }
-.markdown-body .hljs-property { color: var(--hl-property); }
-.markdown-body .hljs-link { color: var(--hl-link); text-decoration: underline; }
-
-/* 行内代码（rehype-highlight 也会给它加 hljs class）保持「行内」观感，
-   不套用代码块的 token 配色。 */
-.markdown-body code.hljs {
-  padding: 2px 6px;
-  background: var(--surface-hover);
-  color: var(--brand);
-}
-
 /* 目录锚点跳转：给 sticky 导航栏（h-16 = 64px）留出空间，
-   否则 scrollIntoView 会把标题顶到导航栏下面看不见。 */
+   否则 scrollIntoView 会把标题顶到导航栏下面看不见。
+   ⚠️ 与 TocSidebar 的 rootMargin '-88px 0px -60% 0px' 成对依赖 Navbar 的 64px 高度。
+   若调整 Navbar 的 h-16，这三处（本行 / TocSidebar JSX / .sticky top-24）必须同步改。 */
 .markdown-body h2[id],
 .markdown-body h3[id],
 .markdown-body h4[id] {
@@ -488,13 +469,141 @@
 }
 
 /* ============================================================
-   搜索结果高亮（<mark>）
+   6. 代码 token 配色
+   ------------------------------------------------------------
+   34 个 --hl-* 收敛为**每主题 4 个颜色**（fg / 中性灰 / 红 / 蓝）。
+   理由：GitHub 原配色有 5-6 个色相，与 Swiss「单强调色 + 中性灰」冲突；
+   但代码 token 需要语义区分（关键字≠字符串≠注释），故取 3 色相 + 灰的折衷。
+   每个 token 色对 --code-bg 的对比度均 ≥ 4.5:1（两套主题分别校验）。
+   变量定义在第 1 节的 :root / .dark 里（单一来源）。
+   ============================================================ */
+.markdown-body .hljs {
+  color: var(--hl-fg);
+  background: transparent;
+}
+.markdown-body .hljs-comment {
+  color: var(--hl-muted);
+  font-style: italic;
+}
+.markdown-body .hljs-quote {
+  color: var(--hl-muted);
+  font-style: italic;
+}
+.markdown-body .hljs-meta {
+  color: var(--hl-muted);
+}
+.markdown-body .hljs-keyword {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-type {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-built_in {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-tag {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-name {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-selector-tag {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-deletion {
+  color: var(--hl-red);
+}
+.markdown-body .hljs-string {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-regexp {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-number {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-literal {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-attr {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-attribute {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-property {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-symbol {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-bullet {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-section {
+  color: var(--hl-blue);
+  font-weight: 600;
+}
+.markdown-body .hljs-selector-attr {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-selector-class {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-selector-id {
+  color: var(--hl-blue);
+}
+.markdown-body .hljs-link {
+  color: var(--hl-blue);
+  text-decoration: underline;
+}
+.markdown-body .hljs-function {
+  color: var(--hl-fg);
+  font-weight: 600;
+}
+.markdown-body .hljs-title {
+  color: var(--hl-fg);
+  font-weight: 600;
+}
+.markdown-body .hljs-variable {
+  color: var(--hl-fg);
+}
+.markdown-body .hljs-template-variable {
+  color: var(--hl-fg);
+}
+.markdown-body .hljs-params {
+  color: var(--hl-fg);
+}
+.markdown-body .hljs-addition {
+  color: var(--hl-fg);
+}
+.markdown-body .hljs-emphasis {
+  color: var(--hl-fg);
+  font-style: italic;
+}
+.markdown-body .hljs-strong {
+  color: var(--hl-fg);
+  font-weight: 700;
+}
+
+/* 行内代码（rehype-highlight 也会给它加 hljs class）保持「行内」观感，
+   不套用代码块的 token 配色。 */
+.markdown-body code.hljs {
+  padding: 1px 5px;
+  background: var(--surface-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0;
+}
+
+/* ============================================================
+   7. 搜索结果高亮（<mark>）
    ============================================================ */
 .markdown-body mark,
 mark.search-hit {
   background: var(--brand-soft);
-  color: var(--brand);
-  border-radius: 3px;
+  color: var(--text); /* 原为 var(--brand)：亮色下 4.07:1 违规 */
+  border-radius: 0;
   padding: 0 2px;
   font-weight: 600;
 }

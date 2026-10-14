@@ -68,26 +68,27 @@ export default function SearchPage() {
   )
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+    <div className="max-w-3xl">
+      {/* 页头：标题 + 副标题 + 通栏强调线 */}
+      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
+        <h1 className="text-3xl mb-2">
           {t('search.title')}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-lead">
           {t('search.subtitle')}
         </p>
       </div>
 
-      {/* 搜索框 */}
-      <form onSubmit={handleSubmit} className="mb-6" role="search">
-        <div className="flex gap-2">
+      {/* 搜索框：下划线式输入（Swiss 表单语汇） */}
+      <form onSubmit={handleSubmit} className="mb-8" role="search">
+        <div className="flex gap-4 items-end">
           <input
             key={query}
             ref={inputRef}
             type="search"
             defaultValue={query}
             placeholder={t('search.placeholder')}
-            className="input flex-1"
+            className="input-line flex-1"
             aria-label={t('search.placeholder')}
             autoFocus
           />
@@ -99,7 +100,7 @@ export default function SearchPage() {
 
       {/* 结果统计（含服务端策略与耗时，便于确认降级是否生效） */}
       {hasQuery && data && !loading && (
-        <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-meta mb-8" style={{ color: 'var(--text-muted)' }}>
           {t('search.resultCount', { count: data.total, query })}
           <span className="ml-2 opacity-60">
             {t('search.meta', { ms: data.took_ms })}
@@ -148,11 +149,11 @@ export default function SearchPage() {
       {/* 结果列表 */}
       {hasQuery && !loading && !error && data && data.results.length > 0 && (
         <>
-          <ul className="space-y-4">
+          <ul className="space-y-8">
             {data.results.map((result) => (
               <li key={result.id}>
-                <Link to={`/posts/${result.slug}`} className="card card-hover block p-5">
-                  <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text)' }}>
+                <Link to={`/posts/${result.slug}`} className="card-flat block group">
+                  <h2 className="text-lg mb-2 group-hover:text-[color:var(--brand)]">
                     <Highlight text={result.title} query={query} />
                   </h2>
                   {result.excerpt && (
@@ -161,7 +162,7 @@ export default function SearchPage() {
                     </p>
                   )}
                   <div
-                    className="flex flex-wrap items-center gap-3 text-xs"
+                    className="flex flex-wrap items-center gap-3 text-meta"
                     style={{ color: 'var(--text-muted)' }}
                   >
                     {result.published_at && <span>{formatDate(result.published_at)}</span>}

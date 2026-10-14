@@ -37,8 +37,8 @@ export default function AdminLayout() {
         <div className="h-16 flex items-center px-6 border-b" style={{ borderColor: 'var(--border)' }}>
           <Link to="/admin" className="flex items-center gap-2 font-bold">
             <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="var(--brand)" />
-              <path d="M9 11h14M9 16h14M9 21h9" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+              <rect width="32" height="32" rx="0" fill="var(--brand)" />
+              <path d="M9 11h14M9 16h14M9 21h9" stroke="var(--brand-fg)" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
             <span style={{ color: 'var(--text)' }}>{t('admin.title')}</span>
           </Link>
@@ -49,10 +49,11 @@ export default function AdminLayout() {
             <Link
               key={item.to}
               to={item.to}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors"
               style={{
-                color: isActive(item.to) ? 'var(--brand)' : 'var(--text-secondary)',
-                background: isActive(item.to) ? 'var(--brand-light)' : 'transparent',
+                /* 激活态改用反相块，与前台导航一致（原为品牌色浅底） */
+                color: isActive(item.to) ? 'var(--invert-fg)' : 'var(--text-secondary)',
+                background: isActive(item.to) ? 'var(--invert-bg)' : 'transparent',
               }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -64,7 +65,7 @@ export default function AdminLayout() {
 
           <Link
             to="/"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold mt-4"
+            className="flex items-center gap-3 px-4 py-3 text-sm font-semibold mt-4"
             style={{ color: 'var(--text-secondary)' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,13 +104,14 @@ export default function AdminLayout() {
           <Link
             key={item.to}
             to={item.to}
-            className="flex flex-col items-center gap-1 px-3 py-2"
+            className="flex flex-col items-center gap-1 px-2 py-2"
             style={{ color: isActive(item.to) ? 'var(--brand)' : 'var(--text-muted)' }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d={item.icon} />
             </svg>
-            <span className="text-[10px] font-semibold">{item.label}</span>
+            {/* whitespace-nowrap：英文 label（Edit About / Dashboard）在 4 列 flex 中会换行 */}
+            <span className="text-[10px] font-semibold whitespace-nowrap">{item.label}</span>
           </Link>
         ))}
       </div>

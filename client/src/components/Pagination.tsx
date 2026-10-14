@@ -28,7 +28,7 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
   const pages = getPageNumbers()
 
   return (
-    <nav className="flex items-center justify-center gap-2 mt-8 flex-wrap">
+    <nav className="flex items-center justify-center gap-2 mt-12 flex-wrap">
       {/* 上一页 */}
       <button
         onClick={() => onChange(page - 1)}
@@ -50,10 +50,11 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
             <button
               key={p}
               onClick={() => onChange(p)}
-              className="w-10 h-10 rounded-full text-sm font-semibold transition-all"
+              className="w-10 h-10 text-sm font-semibold transition-colors"
               style={{
                 background: p === page ? 'var(--brand)' : 'transparent',
-                color: p === page ? '#fff' : 'var(--text-secondary)',
+                /* 暗色下 --brand-fg 为近黑；#fff 在 #FF4D4D 上不达标 */
+                color: p === page ? 'var(--brand-fg)' : 'var(--text-secondary)',
               }}
             >
               {p}

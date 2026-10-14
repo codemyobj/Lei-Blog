@@ -12,22 +12,24 @@ export default function PostCard({ post }: { post: Post }) {
   return (
     <Link
       to={`/posts/${post.slug}`}
-      className="card card-hover block p-6 group"
+      /* card-flat：只有上边一条强调线，无四边框 ——
+         首页 9 张卡片从"浮起白盒子"变成"规则索引"，靠上线建立纵向韵律 */
+      className="card-flat block group"
     >
       {/* 封面图 */}
       {post.cover_image && (
-        <div className="mb-4 -mx-6 -mt-6 overflow-hidden rounded-t-2xl">
+        <div className="mb-4 -mt-5 overflow-hidden">
           <img
             src={post.cover_image}
             alt={post.title}
-            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-48 object-cover transition-opacity duration-300 group-hover:opacity-90"
             loading="lazy"
           />
         </div>
       )}
 
-      {/* 标题 */}
-      <h2 className="text-xl font-bold mb-2 group-hover:opacity-80 transition-opacity" style={{ color: 'var(--text)' }}>
+      {/* 标题（字重由非分层 CSS 统一决定，不写 font-bold） */}
+      <h2 className="text-xl mb-2 group-hover:text-[color:var(--brand)] transition-colors">
         {post.title}
       </h2>
 
@@ -48,7 +50,7 @@ export default function PostCard({ post }: { post: Post }) {
       )}
 
       {/* 元信息 */}
-      <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="flex items-center gap-4 text-meta" style={{ color: 'var(--text-muted)' }}>
         {post.published_at && (
           <span className="flex items-center gap-1">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

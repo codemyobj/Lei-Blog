@@ -71,13 +71,13 @@ export default function AdminAboutEditPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
+        <div className="mb-4 p-3 text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="mb-4 p-3 rounded-xl text-sm" style={{ background: 'color-mix(in srgb, var(--success) 15%, transparent)', color: 'var(--success)' }}>
+        <div className="mb-4 p-3 text-sm" style={{ background: 'color-mix(in srgb, var(--success) 15%, transparent)', color: 'var(--success)' }}>
           {t('admin.saveSuccess')}
         </div>
       )}

@@ -16,7 +16,7 @@ export default function TagDetailPage() {
     return (
       <div className="text-center py-16">
         <div className="text-5xl mb-4">🏷️</div>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+        <h1 className="text-2xl mb-2">
           {error || t('tags.notFound')}
         </h1>
         <Link to="/tags" className="btn btn-primary mt-4">{t('tags.viewAll')}</Link>
@@ -27,18 +27,18 @@ export default function TagDetailPage() {
   return (
     <div>
       {/* 面包屑 */}
-      <div className="mb-6 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <div className="mb-6 text-meta" style={{ color: 'var(--text-muted)' }}>
         <Link to="/tags" className="hover:underline">{t('nav.tags')}</Link>
         <span className="mx-2">/</span>
         <span style={{ color: 'var(--text)' }}>#{tag.name}</span>
       </div>
 
-      {/* 标签标题 */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+      {/* 页头：标题 + 副标题 + 通栏强调线 */}
+      <div className="mb-12 pb-6 border-b" style={{ borderColor: 'var(--rule)' }}>
+        <h1 className="text-3xl mb-2">
           #{tag.name}
         </h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+        <p className="t-lead">
           {t('tags.postCount', { count: posts.length })}
         </p>
       </div>
@@ -47,7 +47,7 @@ export default function TagDetailPage() {
       {posts.length === 0 ? (
         <EmptyState title={t('tags.emptyPosts')} icon="📄" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}

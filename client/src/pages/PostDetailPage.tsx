@@ -21,7 +21,7 @@ export default function PostDetailPage() {
     return (
       <div className="max-w-3xl mx-auto text-center py-16">
         <div className="text-5xl mb-4">😕</div>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+        <h1 className="text-2xl mb-2">
           {error || t('post.notFound')}
         </h1>
         <Link to="/" className="btn btn-primary mt-4">{t('post.backHome')}</Link>
@@ -58,14 +58,13 @@ export default function PostDetailPage() {
             {t('post.backHome')}
           </Link>
 
-          {/* 文章头部 */}
-          <header className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text)' }}>
-              {post.title}
-            </h1>
-
-            {/* 元信息 */}
-            <div className="flex flex-wrap items-center gap-4 text-sm" style={{ color: 'var(--text-muted)' }}>
+          {/*
+            文章头部：Swiss 的 kicker/eyebrow 模式 —— 元信息行**移到标题上方**，
+            这是本次唯一一处结构性 JSX 调序。header 加下沿强调线。
+          */}
+          <header className="mb-8 pb-8 border-b" style={{ borderColor: 'var(--rule)' }}>
+            {/* 眉标行：日期 · 阅读时长 · 阅读量 · 分类 */}
+            <div className="t-eyebrow flex flex-wrap items-center gap-4 mb-4">
               {post.published_at && (
                 <span className="flex items-center gap-1">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -102,9 +101,14 @@ export default function PostDetailPage() {
               )}
             </div>
 
+            {/* 大字号标题（字重由非分层 CSS 决定：h1 = 700） */}
+            <h1 className="text-3xl sm:text-4xl mb-4">
+              {post.title}
+            </h1>
+
             {/* 标签 */}
             {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
+              <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
                   <TagBadge key={tag.id} tag={tag} />
                 ))}
@@ -112,9 +116,9 @@ export default function PostDetailPage() {
             )}
           </header>
 
-          {/* 封面图 */}
+          {/* 封面图（无边距圆角） */}
           {post.cover_image && (
-            <div className="mb-8 rounded-2xl overflow-hidden">
+            <div className="mb-8 overflow-hidden">
               <img src={post.cover_image} alt={post.title} className="w-full max-h-96 object-cover" />
             </div>
           )}
@@ -122,8 +126,8 @@ export default function PostDetailPage() {
           {/* 文章内容 */}
           <MarkdownRenderer content={post.content || ''} />
 
-          {/* 底部分隔 */}
-          <hr className="my-8 border-0 border-t" style={{ borderColor: 'var(--border)' }} />
+          {/* 底部分隔（强调线） */}
+          <hr className="my-8 border-0 border-t" style={{ borderColor: 'var(--rule)' }} />
 
           <div className="flex items-center justify-between">
             <Link to="/" className="btn btn-outline">
@@ -131,9 +135,10 @@ export default function PostDetailPage() {
             </Link>
           </div>
 
-          {/* 评论区 */}
-          <section className="mt-12" aria-label={t('comment.title')}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text)' }}>
+          {/* 评论区：外围加瑞士式框架（Giscus 是跨域 iframe，外部 CSS 无法穿透，
+              因此只做「上边线 + eyebrow 标题」的外围处理） */}
+          <section className="mt-12 pt-8 border-t" style={{ borderColor: 'var(--rule)' }} aria-label={t('comment.title')}>
+            <h2 className="t-eyebrow mb-4">
               {t('comment.title')}
             </h2>
             <CommentSection />

@@ -63,7 +63,7 @@ export default function AdminPostListPage() {
             className="btn text-xs"
             style={{
               background: statusFilter === filter.value ? 'var(--brand)' : 'var(--surface)',
-              color: statusFilter === filter.value ? '#fff' : 'var(--text-secondary)',
+              color: statusFilter === filter.value ? 'var(--invert-fg)' : 'var(--text-secondary)',
               border: '1px solid var(--border)',
             }}
           >
@@ -97,7 +97,7 @@ export default function AdminPostListPage() {
                       {post.title}
                     </Link>
                     <span
-                      className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      className="text-xs px-2 py-0.5 font-semibold"
                       style={{
                         background: post.status === 'published' ? 'color-mix(in srgb, var(--success) 15%, transparent)' : 'color-mix(in srgb, var(--warning) 15%, transparent)',
                         color: post.status === 'published' ? 'var(--success)' : 'var(--warning)',
