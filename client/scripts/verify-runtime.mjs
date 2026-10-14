@@ -229,6 +229,26 @@ function startServer() {
       return json({ about: { id: 1, content: '## 关于\n\n一个写博客的人。', updated_at: '2026-01-01T00:00:00.000Z' } })
     }
 
+    // ---- 桩认证 + 后台接口：为了让真实 admin 页面能渲染，从而实测其标题字重 ----
+    if (url.pathname === '/api/auth/me') {
+      return json({
+        user: {
+          id: 1,
+          email: 'admin@example.com',
+          name: 'Admin',
+          created_at: '2026-01-01T00:00:00.000Z',
+          updated_at: '2026-01-01T00:00:00.000Z',
+        },
+      })
+    }
+    if (url.pathname === '/api/admin/posts') {
+      return json({ posts: POSTS, total: POSTS.length, page: 1, pageSize: 1000, totalPages: 1 })
+    }
+    if (url.pathname === '/api/admin/tags') return json({ tags: TAGS })
+    if (url.pathname === '/api/admin/about') {
+      return json({ about: { id: 1, content: '## 关于\n\n一个写博客的人。', updated_at: '2026-01-01T00:00:00.000Z' } })
+    }
+
     // ---- dist 静态资源（SPA fallback） ----
     let filePath = path.join(DIST, url.pathname)
     if (!filePath.startsWith(DIST)) {
@@ -761,10 +781,65 @@ async function main() {
       `letter-spacing=${fontInfo.h1LetterSpacing}`
     )
     check(
-      '标题字重由非分层 CSS 决定：h1=700（JSX 里的 font-bold 已失效但不影响结果）',
+      '标题字重由标题 CSS 规则决定：h1=700（约定：标题不带字重 utility）',
       fontInfo.h1Weight === '700',
       `font-weight=${fontInfo.h1Weight}`
     )
+
+    // ---------- 标题字重：级联真实机制（Tailwind v3 展平 ⇒ 特异性决胜，非"非分层优先"） ----------
+    console.log('\n--- 标题字重机制：非分层规则并不优先，标题上的 utility 会真的赢 ---')
+
+    // (a) 用真实构建 CSS 注入测试节点，实证机制（含反面用例）
+    await navigate(cdp, '/')
+    const cascade = await cdp.evaluate(`(() => {
+      const host = document.createElement('div')
+      host.innerHTML = '<h2 id="__a" class="text-lg">A</h2>'
+        + '<h2 id="__b" class="text-lg font-bold">B</h2>'
+        + '<h1 id="__c" class="text-2xl">C</h1>'
+        + '<h3 id="__d">D</h3>'
+      document.body.appendChild(host)
+      const w = (id) => getComputedStyle(document.getElementById(id)).fontWeight
+      const r = { plainH2: w('__a'), h2Bold: w('__b'), plainH1: w('__c'), plainH3: w('__d') }
+      host.remove()
+      return r
+    })()`)
+    check(
+      '标题 CSS 规则生效：纯 <h2>=600、纯 <h3>=600、纯 <h1>=700',
+      cascade.plainH2 === '600' && cascade.plainH3 === '600' && cascade.plainH1 === '700',
+      `h2=${cascade.plainH2} h3=${cascade.plainH3} h1=${cascade.plainH1}`
+    )
+    check(
+      '<h2 class="font-bold"> 实测 700 —— 证伪"非分层护栏"：utility 在标题上真的会赢（故须靠约定禁用）',
+      cascade.h2Bold === '700',
+      `h2.font-bold=${cascade.h2Bold}`
+    )
+
+    // (b) 真实 admin 页面实测（stub 提供 /auth/me + /admin/*，让受保护页面真正渲染）
+    await navigate(cdp, '/')
+    await cdp.evaluate(`localStorage.setItem('token', 'stub-token')`)
+    await navigate(cdp, '/admin', 900)
+    const adminH = await cdp.evaluate(`(() => {
+      const h2 = [...document.querySelectorAll('h2')].find((h) => h.classList.contains('text-lg'))
+      const h1 = document.querySelector('h1')
+      return {
+        path: location.pathname,
+        h2Text: h2 ? h2.textContent.trim() : null,
+        h2Weight: h2 ? getComputedStyle(h2).fontWeight : null,
+        h2Class: h2 ? String(h2.className) : null,
+        h1Weight: h1 ? getComputedStyle(h1).fontWeight : null,
+      }
+    })()`)
+    check(
+      '真实 admin 页（你点名的 AdminDashboardPage）<h2 class="text-lg"> 实测字重 = 600',
+      adminH.path === '/admin' && adminH.h2Weight === '600',
+      `path=${adminH.path} h2="${adminH.h2Text}" class="${adminH.h2Class}" weight=${adminH.h2Weight}`
+    )
+    check(
+      '真实 admin 页 <h1> 实测字重 = 700（与 CSS 一致，无 utility 干扰）',
+      adminH.h1Weight === '700',
+      `h1 weight=${adminH.h1Weight}`
+    )
+    await cdp.evaluate(`localStorage.removeItem('token')`)
 
     // ---------- §12 #11 功能无损 ----------
     console.log('\n--- §12 #11 功能无损（桩 API 驱动真实渲染）---')

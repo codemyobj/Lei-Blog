@@ -95,7 +95,7 @@
 
 1. **`@tailwindcss/typography` 没装**，但 `tailwind.config.ts:26-32` 有 `typography` 配置，`plugins: []` 也是空的。**该配置是死配置**，`prose` 类不可用。全站正文排版其实是 `index.css:163+` 的 `.markdown-body` 手写规则。
    **不要为了这次改造去装 typography 插件** —— 会引入一套与 `.markdown-body` 并行的第二排版体系，徒增冲突。
-2. **`.markdown-body` 的规则是「非分层」CSS**（写在 `@layer` 之外），所以它**优先于所有 Tailwind utilities**。这条性质要利用起来（见 §4.2 的排版实现），但也意味着：给 `.markdown-body` 内部的元素加 utility 类可能"不生效"，排查时先看这一点。
+2. **`.markdown-body` 的规则会"压过"它内部元素的 utility —— 但靠的是特异性，不是"非分层"**。原表述「非分层 CSS 优先于所有 `@layer` utilities」**在本构建下不成立**：Tailwind v3 会把 `@layer` 展平，`dist` 里没有原生级联层（自证见 §4.4）。真正起作用的是特异性：`.markdown-body h2`(0,1,1) > `.text-2xl`(0,1,0)，所以能给 `.markdown-body` 内部元素加 utility 但可能"不生效"——排查时先看这点。（同一坑在标题元素上更危险，见 §4.4 与 §11。）
 3. **`formatDate` 返回 `YYYY-MM-DD`**（`utils/formatDate.ts:10`），与语言无关 ⇒ 中英文案长度差异**不会**造成日期列宽度溢出。
 4. **`Inter` 声明了但从未加载**：`tailwind.config.ts:23` 和 `index.css:55` 都把它放在字体栈首位，但全库无 `@font-face`、无 `<link>`、无 CDN。**当前站点实际 100% 用系统字体。** 见 §3.2 的处置。
 5. **admin 与前台共用同一套变量与组件类**（`AdminLayout.tsx` 用 `var(--surface)`/`var(--border)`/`.btn`/`.card`/`.input`），所以 admin 会**自动跟随换肤**。
@@ -485,7 +485,7 @@ pyftsubset src/assets/fonts/archivo-latin.woff2 \
 
 ### 4.4 与 `fontFamily.sans` 的整合方式
 
-**采用「Tailwind `heading` 家族 + 非分层元素默认值」双轨**：
+**采用「Tailwind `heading` 家族 + 标题元素默认值（写在 `@layer` 之外）」双轨**：
 
 **① `tailwind.config.ts` 新增 `heading` 家族**（供 JSX 显式调用，以及未来非标题元素）：
 ```ts
@@ -503,17 +503,22 @@ fontFamily: {
 ```
 **同时把 `Inter` 从 `sans` 里删掉。** 它从未被加载（§1.5），留在栈首意味着「装了 Inter 的用户看到一种字体，其他用户看到另一种」—— 对以排版为核心的改造来说，**渲染确定性比碰运气更重要**。
 
-**② 非分层元素默认值**（这是「零 JSX 改动」的关键，写在 `index.css` 的 `@layer` **之外**）：
+**② 标题默认值（写在 `index.css` 的 `@layer` **之外**）**：
+
+⚠️ **重要更正**：「零 JSX 改动」**不是靠 Cascade Layers，而是靠一条约定**。原方案误以为「非分层样式优先于任何 `@layer`」在本构建下成立，**实测不成立**（真实机制见下方注释与 §11）：Tailwind v3 会把 `@layer` **展平**输出，`dist` 产物里没有任何原生级联层，非分层标题规则与 `.font-*` utility 同区，**按特异性决胜 ⇒ utility 赢**。因此真正的护栏是：**标题元素不带字重 utility**。
+
 ```css
 /* ============================================================
    标题默认排印
    ------------------------------------------------------------
-   ⚠️ 这一段刻意写在所有 @layer 之外。
-   CSS Cascade Layers 规则：非分层样式优先于任何 @layer 内的样式。
-   因此这里的规则会**压过** Tailwind 的 @layer utilities，
-   从而让 h1~h4 无条件获得标题字体与负字距，无需在 JSX 里加类。
-   同理，JSX 里已有的 font-bold / font-semibold 在标题上会**失效**
-   （字重由这里统一决定）—— 这是刻意的，避免"字重来源有两处"。
+   ⚠️ 真实机制（别再信 "Cascade Layers 非分层优先"）：
+   Tailwind **v3** 把 `@layer` 展平后再输出，构建产物 dist/assets/*.css
+   里**没有任何原生级联层**（自证：grep -o "@layer" dist/assets/*.css | wc -l → 0）。
+   所以下面这段非分层规则与展平后的 .font-bold 等**同处非分层区**，
+   胜负只看特异性：.font-bold (0,1,0) > h2 (0,0,1) ⇒ utility 赢、这里被压过。
+   ⇒ 本项目**约定**：标题元素（h1~h6）不得携带任何 font-* 字重 utility；
+      字重一律由这里单一决定：h1 = 700，h2/h3/h4 = 600。
+      改字重改这里，不要在 JSX 上加类；也不要 !important 抢回来。
    ============================================================ */
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
@@ -526,7 +531,7 @@ h1, h2, h3, h4 {
 h1 { font-weight: 700; letter-spacing: -0.03em; }
 h2 { letter-spacing: -0.025em; }
 ```
-`.markdown-body h2/h3/h4` 已有更高特异性的非分层规则（`index.css:172,177,181`），会正常覆盖上面的 `line-height` 等，**只需给它们补 `font-family` 与 `letter-spacing`**（因为那三条规则里没有声明这两项，会从 `h2` 继承 —— 实际会继承，可不动。但 `line-height: 1.2` 会被 `.markdown-body h2` 的 `@apply text-2xl`（含 lineHeight）覆盖，符合预期）。
+`.markdown-body h2/h3/h4` 已有**更高特异性**的规则（写在 `@layer` 之外，`index.css:172,177,181`），会正常覆盖上面的 `line-height` 等，**只需给它们补 `font-family` 与 `letter-spacing`**（因为那三条规则里没有声明这两项，会从 `h2` 继承 —— 实际会继承，可不动。但 `line-height: 1.2` 会被 `.markdown-body h2` 的 `@apply text-2xl`（含 lineHeight）覆盖，符合预期）。
 
 **JSX 侧唯一需要加的语义类**（P1，5 处）：`.t-eyebrow`，见 §6.4。
 
@@ -658,7 +663,7 @@ fontSize: {
 |---|---|---|---|---|---|---|
 | Display | `text-4xl` | 52px | 700 | 1.05 | -0.035em | 文章详情标题 |
 | Page h1 | `text-3xl` | 36px | 700 | 1.12 | -0.03em | 各页头标题 |
-| Section h2 | `text-2xl` | 24px | 700 | 1.28 | -0.02em | 正文 h2、错误页标题 |
+| Section h2 | `text-2xl` | 24px | 600 | 1.28 | -0.02em | 正文 h2、错误页标题 |
 | Card title | `text-xl` | 20px | 600 | 1.35 | -0.01em | PostCard / CategoryCard 标题 |
 | Lead | `text-lg` | 18px | 400 | 1.55 | 0 | 页面副标题（`.t-lead`） |
 | Body | `text-base` | 16px | 400 | 1.75 | 0 | 正文段落 |
@@ -666,6 +671,8 @@ fontSize: {
 | Meta | `text-meta` | 13px | 400 | 1.5 | 0 | 时间 / 阅读量 / 浏览量 |
 | Eyebrow | `text-eyebrow` | 11px | 600 | 1.4 | +0.14em | 全大写小标签（`uppercase`） |
 | Code | `.markdown-body pre code` | 14px | 400 | 1.7 | 0 | 代码块 |
+
+> **字重口径以 §5.5 为准**：`h1` = 700，`h2`/`h3`/`h4` = 600。本表早前把 Section h2 误写为 700（与 §5.5 冲突），已按 CSS 实际值（`index.css` 中 `h1{font-weight:700}`、`h2/h3/h4{font-weight:600}`）收敛为 **600**。表中「字重」列描述的是**标题 CSS 规则的输出**，不是 JSX utility——标题**不得**携带字重 utility（原因见 §4.4）。
 
 ### 6.4 `.t-eyebrow` 与 `.t-lead`（加进 `@layer components`）
 
@@ -939,7 +946,7 @@ borderRadius: {
 
 ### 8.6 `.markdown-body`（正文排版）
 
-替换 `index.css:163-270`，**保持非分层**（优先于 utilities，见 §1.5）：
+替换 `index.css:163-270`，**保持写在 `@layer` 之外**（高特异性 `.markdown-body xxx` 压过 utility，见 §1.5）：
 
 ```css
 .markdown-body {
@@ -1071,7 +1078,7 @@ COMMENTS                            ← .t-eyebrow
 
 **改动**：
 1. **把元信息行移到标题上方**（Swiss 的 kicker/eyebrow 模式）。`PostDetailPage.tsx:62-113` 的 `<header>` 内，先渲染元信息 `<div>`（`className="t-eyebrow flex flex-wrap items-center gap-4 mb-4"`），再渲染 `<h1>`。这是**唯一一处结构性 JSX 调序**，收益明确。
-2. `<h1>` 保留 `text-3xl sm:text-4xl`（改后即 36px → 52px），**删掉 `font-bold`**（字重已由非分层 CSS 接管，留着会误导）。
+2. `<h1>` 保留 `text-3xl sm:text-4xl`（改后即 36px → 52px），**删掉 `font-bold`**（字重由标题 CSS 规则接管；留着会误导，且在本构建下 utility 会真的赢——见 §4.4）。
 3. `<header>` 加 `pb-8 border-b` + `style={{ borderColor: 'var(--rule)' }}`。
 4. 评论区标题（`:136`）`text-xl font-bold` → `className="t-eyebrow mb-4"`。
 5. 封面图容器（`:117`）`rounded-2xl` → 删。
@@ -1187,13 +1194,14 @@ COMMENTS                            ← .t-eyebrow
 
 ### 11.1 最容易出回归的 3 个点（按风险排序）
 
-**① 非分层标题规则压过 utilities —— 会波及 admin 与 `.markdown-body`**
+**① 标题字重：非分层标题规则**不**能压过 utilities —— 挡板只有"标题不带字重 utility"这条约定**
 
-`index.css` 里那段 `h1,h2,h3,h4 { font-family: var(--font-heading); font-weight: 600; line-height: 1.2 }` 写在所有 `@layer` 之外（§4.4），它会**优先于 Tailwind 的 `@layer utilities`**。后果：
-- JSX 里已有的 `font-bold` / `font-semibold` 在标题上**失效**（字重统一由 CSS 决定）—— 这是设计意图，但工程师必须知道，否则会反复尝试"为什么 font-bold 不生效"。
-- `.markdown-body h2/h3/h4` 的既有规则因为**特异性更高**（0,1,1 vs 0,0,1）仍然生效，但 `.markdown-body h2` 里 `@apply text-2xl` 带来的 `line-height: 1.28` 会覆盖 `h2` 的 `1.2`，行为正确。
-- **`AdminLayout`/admin 页面的 `<h2>`/`<h3>` 会一并变成 Archivo** —— 预期内，但需确认没有出现排版错位。
-- **回归验证**：打开 6 个前台页面 + 4 个 admin 页面，逐个确认标题字体、字重、无溢出。
+⚠️ **更正**：原表述「非分层规则优先于 `@layer utilities`」**在本构建下不成立**。Tailwind v3 会把 `@layer` **展平**，`dist` 产物里**没有任何原生级联层**（自证：`grep -o "@layer" dist/assets/*.css | wc -l` → 0）。因此 `index.css` 里那段 `h1,h2,h3,h4 { … font-weight: 600 }` 与 `.font-bold` **同处非分层区**，胜负只由**特异性**决定：`.font-bold`(0,1,0) > `h2`(0,0,1) ⇒ **utility 赢、CSS 被压过**。后果：
+- **标题上若带 `font-bold`/`font-semibold`，它会**真的生效**并静默偏离设计系统**（例：admin 的 `<h2 class="font-bold">` 会渲染成 700，而设计是 600 —— 这正是本次收口修掉的那处）。
+- 所以护栏是**约定**，不是机制保证：**标题元素（h1~h6）不得携带任何字重 utility**。审计命令：`grep -rn "<h[1-6][^>]*font-" client/src`（预期 0 命中）。
+- `.markdown-body h2/h3/h4` 的既有规则因为**特异性更高**（0,1,1 vs utility 0,1,0）仍然生效，行为正确。
+- 只想改某级标题字重 → 改 `index.css` 的标题规则，**不要**在 JSX 上加 `font-*` 类。
+- **回归验证**：打开 6 个前台页面 + 4 个 admin 页面，逐个确认标题字体、字重（h1=700、h2/h3/h4=600）、无溢出。
 
 **② 暗色下 `--brand-fg` 是近黑而非白 —— 漏改任何一处 `#fff` 就报错色**
 

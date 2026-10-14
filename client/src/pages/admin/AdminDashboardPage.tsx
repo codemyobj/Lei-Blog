@@ -30,7 +30,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text)' }}>{t('admin.dashboard')}</h1>
+      <h1 className="text-2xl mb-6" style={{ color: 'var(--text)' }}>{t('admin.dashboard')}</h1>
 
       {loading ? (
         <Spinner />
@@ -57,7 +57,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* 快捷操作 */}
-          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text)' }}>{t('admin.quickActions')}</h2>
+          <h2 className="text-lg mb-4" style={{ color: 'var(--text)' }}>{t('admin.quickActions')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link to="/admin/posts/new" className="card card-hover p-5 flex items-center gap-4">
               <div className="w-12 h-12 flex items-center justify-center" style={{ background: 'var(--wash)' }}>

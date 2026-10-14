@@ -50,7 +50,7 @@ export default function AdminAboutEditPage() {
       {/* 页头 */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{t('admin.aboutEdit')}</h1>
+          <h1 className="text-2xl" style={{ color: 'var(--text)' }}>{t('admin.aboutEdit')}</h1>
           {updatedAt && (
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
               {t('about.lastUpdated', { date: formatDate(updatedAt) })}

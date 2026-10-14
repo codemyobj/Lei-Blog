@@ -94,7 +94,7 @@ export default function AdminPostEditPage() {
           <Link to="/admin/posts" className="btn btn-ghost text-sm">
             {t('admin.backToList')}
           </Link>
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>
+          <h1 className="text-2xl" style={{ color: 'var(--text)' }}>
             {isEdit ? t('admin.editPost') : t('admin.newPost')}
           </h1>
         </div>
