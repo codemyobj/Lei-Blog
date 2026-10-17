@@ -26,7 +26,7 @@ export default function LanguageSwitcher({ className = '' }: { className?: strin
             className="px-2.5 py-1 transition-colors"
             style={{
               background: active ? 'var(--brand)' : 'transparent',
-              /* var(--brand-fg) 在暗色下是近黑：#fff 在 #FF4D4D 上只有 3.27:1 */
+              /* var(--brand-fg) 亮暗两套 token 均已按 ≥4.5:1 校验（见 scripts/verify-contrast.mjs） */
               color: active ? 'var(--brand-fg)' : 'var(--text-secondary)',
             }}
             aria-pressed={active}

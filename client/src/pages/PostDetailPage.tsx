@@ -59,9 +59,9 @@ export default function PostDetailPage() {
           </Link>
 
           {/*
-            文章头部：杂志开场 ——
-            红色 kicker（分类 + 右侧延伸细线）→ 衬线大标题 → 等宽元信息 → 标签。
-            取自已批准预览的 .kicker / h1.hero / .meta。
+            文章头部：手账开场 ——
+            手写小标注（分类，✎ 前缀由 CSS 提供）→ 黑体大标题 → 等宽元信息 → 贴纸标签。
+            取自已批准预览的 .doodle / h1.hero / .meta / .stickers。
           */}
           <header className="mb-8">
             {post.category && (
@@ -73,7 +73,7 @@ export default function PostDetailPage() {
               </Link>
             )}
 
-            {/* 文章标题：clamp(34px→60px)，衬线 600（字重由非分层 CSS 决定，不加 font-* utility） */}
+            {/* 文章标题：clamp(32px→54px)，黑体 700（字重由非分层 CSS 决定，不加 font-* utility） */}
             <h1 className="text-post-title mb-5">{post.title}</h1>
 
             {/* 元信息：等宽（预览 .meta） */}
@@ -116,13 +116,13 @@ export default function PostDetailPage() {
           </header>
 
           {/*
-            大封面：16 : 8.2（预览 figure.cover）+ 内描边发丝线。
+            大封面：16 : 9（比上一轮 16/8.2 更柔和，手账风不追求"通栏大图"的仪式感）。
             ⚠️ cover_image 为 NULL 时**整块不渲染** —— 绝不留一个空的高框，
-               也不出现破图占位。无图时标题下直接接双线，文章以文字开场。
+               也不出现破图占位。无图时标题下直接接细线，文章以文字开场。
             外链图加载失败时 onError 把 img 藏起来，--wash 底色兜底。
           */}
           {post.cover_image && (
-            <figure className="hairline-frame aspect-[16/8.2] mb-2">
+            <figure className="hairline-frame aspect-[16/9] mb-2">
               <img
                 src={post.cover_image}
                 alt={post.title}
@@ -134,8 +134,8 @@ export default function PostDetailPage() {
             </figure>
           )}
 
-          {/* 粗细双线：3px 粗线 + 5px 间距 + 1px 细线（预览 .dbl） */}
-          <div className="rule-double w-16 mt-7 mb-10" aria-hidden="true" />
+          {/* hero 收尾：留白 + 一条 --rule 细线（上一轮的双细线已移除） */}
+          <hr className="mt-8 mb-10 border-0 border-t" style={{ borderColor: 'var(--rule)', width: '3rem' }} />
 
           {/* 文章内容 */}
           <MarkdownRenderer content={post.content || ''} />

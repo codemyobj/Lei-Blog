@@ -5,26 +5,40 @@ import { timeAgo } from '../utils/formatDate'
 import { estimateReadingTime } from '../utils/readingTime'
 import TagBadge from './TagBadge'
 
+/** 和纸胶带的三种配色（对应预览 .tape / .tape.mint / .tape.lav），按文章 id 取模轮换 */
+const TAPE_VARIANTS = ['', 'mint', 'lav'] as const
+
 export default function PostCard({ post }: { post: Post }) {
   const { t } = useTranslation()
   const readingTime = estimateReadingTime(post.content || post.excerpt || '')
 
+  // 有封面才贴胶带：胶带是"贴在封面图上沿"的，没有封面时硬贴会显得没处可贴
+  const tapeClass = post.cover_image
+    ? TAPE_VARIANTS[Math.abs(post.id) % TAPE_VARIANTS.length]
+    : null
+
   return (
     <Link
       to={`/posts/${post.slug}`}
-      /* card-media：有边框的杂志卡，封面图是主角（预览 .card + .im）。
-         悬停轻微上浮由 .card-media:hover 提供。 */
+      /* card-media：圆角 + 软阴影的手账卡（预览 .card）。
+         悬停上浮由 .card-media:hover 提供。 */
       className="card-media group"
     >
       {/*
-        封面图区：3:2（预览卡片封面比例）。
-        ⚠️ cover_image 为 NULL 时**整块不渲染**（不能留一个空的高框），
-           由调用处的 grid items-start 保证卡片各自按内容取高，不塌陷也不留白。
-        外链图加载失败时 onError 把 img 藏起来，--wash 底色 + 内描边兜底，
-        不会出现浏览器的破图图标。
+        和纸胶带：斜贴色块，装饰件（CSS 里 pointer-events:none）。
+        只在有封面时渲染 —— 无封面时卡片直接从标题开始。
       */}
-      {post.cover_image && (
-        <div className="hairline-frame aspect-[3/2]">
+      {tapeClass !== null && <span className={`tape ${tapeClass}`} aria-hidden="true" />}
+
+      {/*
+        封面图区：3:2（预览 .card .im）。
+        ⚠️ cover_image 为 NULL 时**整块不渲染**（不能留一个空的高框），
+           由调用处网格的 items-start 保证卡片各自按内容取高。
+        外链图加载失败时 onError 把 img 藏起来，--wash 底色兜底，
+           不会出现浏览器的破图图标。
+      */}
+      {post.cover_image ? (
+        <div className="card-cover aspect-[3/2]">
           <img
             src={post.cover_image}
             alt={post.title}
@@ -35,11 +49,14 @@ export default function PostCard({ post }: { post: Post }) {
             className="h-full w-full object-cover transition-opacity duration-300 group-hover:opacity-90"
           />
         </div>
+      ) : (
+        /* 无封面：顶部留一点气口，避免标题顶到卡片上沿显得急 */
+        <div className="h-2" aria-hidden="true" />
       )}
 
-      <div className="p-4 pb-5">
-        {/* 标题（衬线，19px；字重由非分层 CSS 决定 = 600，不写 font-* utility） */}
-        <h2 className="text-xl mb-2 group-hover:text-[color:var(--brand)] transition-colors">
+      <div className={post.cover_image ? 'p-4 pb-5' : 'px-4 pb-5 pt-3'}>
+        {/* 标题（黑体 18px；字重由非分层 CSS 决定 = 700，不写 font-* utility） */}
+        <h2 className="text-lg mb-2 group-hover:text-[color:var(--brand)] transition-colors">
           {post.title}
         </h2>
 
@@ -50,7 +67,7 @@ export default function PostCard({ post }: { post: Post }) {
           </p>
         )}
 
-        {/* 标签 */}
+        {/* 贴纸标签（粉彩 pill） */}
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             {post.tags.map((tag) => (
@@ -59,7 +76,7 @@ export default function PostCard({ post }: { post: Post }) {
           </div>
         )}
 
-        {/* 元信息：等宽（杂志排版的 meta 语汇） */}
+        {/* 元信息：等宽 */}
         <div className="t-meta flex flex-wrap items-center gap-4" style={{ color: 'var(--text-muted)' }}>
           {post.published_at && (
             <span className="flex items-center gap-1">

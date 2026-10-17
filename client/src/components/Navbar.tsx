@@ -45,8 +45,9 @@ export default function Navbar() {
       <nav className="max-w-6xl mx-auto px-6 sm:px-10 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 font-bold text-lg shrink-0" style={{ color: 'var(--text)' }}>
+          {/* 圆角方块（手账风的圆角体系；只有高度 h-16 是契约，不许动） */}
           <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="0" fill="var(--brand)" />
+            <rect width="32" height="32" rx="8" fill="var(--brand)" />
             <path d="M9 11h14M9 16h14M9 21h9" stroke="var(--brand-fg)" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
           <span className="hidden lg:inline">{t('nav.brand')}</span>

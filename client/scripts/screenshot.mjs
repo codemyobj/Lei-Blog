@@ -12,8 +12,8 @@
 // 产出（6 张，命名清晰）：
 //   home-light.png / home-dark.png    首页 1440 宽
 //   post-light.png / post-dark.png    技术文详情（cover_image=NULL 的真实文章）
-//   post-gallery.png                  生活文详情（无封面 + 正文 5 图图集）
-//   home-mobile.png                   首页 375 宽
+//   post-gallery.png                  生活文详情（无封面 + 正文 5 图图集 + <mark>）
+//   home-mobile.png                   首页移动端 390 宽
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -21,9 +21,9 @@ import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { PORT, startServer } from './stub-server.mjs'
 
-const CDP_PORT = 9334
+const CDP_PORT = 9336
 const OUT_DIR =
-  process.argv[2] ?? 'C:/Users/雷磊/WorkBuddy/2026-10-06-00-34-50/shots'
+  process.argv[2] ?? 'C:/Users/雷磊/WorkBuddy/2026-10-06-00-34-50/shots2'
 
 const DIST = path.resolve(import.meta.dirname, '../dist')
 
@@ -198,14 +198,14 @@ async function main() {
   await cdp.send('Page.enable')
   await cdp.send('Runtime.enable')
 
-  // [文件名, 路由, 主题, 宽度, 语言, 就绪后额外等待]
+  // [文件名, 路由, 主题, 宽度, 语言]
   const shots = [
-    ['home-light.png', '/', 'light', 1440, 'zh', 0],
-    ['home-dark.png', '/', 'dark', 1440, 'zh', 0],
-    ['post-light.png', '/posts/react-virtual-list', 'light', 1440, 'zh', 0],
-    ['post-dark.png', '/posts/react-virtual-list', 'dark', 1440, 'zh', 0],
-    ['post-gallery.png', '/posts/seven-days-in-the-mountains', 'light', 1440, 'zh', 0],
-    ['home-mobile.png', '/', 'light', 375, 'zh', 0],
+    ['home-light.png', '/', 'light', 1440, 'zh'],
+    ['home-dark.png', '/', 'dark', 1440, 'zh'],
+    ['post-light.png', '/posts/react-virtual-list', 'light', 1440, 'zh'],
+    ['post-dark.png', '/posts/react-virtual-list', 'dark', 1440, 'zh'],
+    ['post-gallery.png', '/posts/seven-days-in-the-mountains', 'light', 1440, 'zh'],
+    ['home-mobile.png', '/', 'light', 390, 'zh'],
   ]
 
   console.log('='.repeat(78))

@@ -25,9 +25,8 @@ export default function HomePage() {
   return (
     <div>
       {/*
-        页头：杂志 masthead —— 红色 kicker（站点名 + 右侧延伸细线）
-        → 衬线 h1 → 导语。
-        不加通栏 border-b：编辑风页头靠 kicker 的细线收尾，不再压一条黑线。
+        页头：手账 masthead —— 手写小标注（站点名，✎ 前缀由 CSS 提供）
+        → 黑体 h1 → 导语。不加通栏 border-b：手账页头靠留白节奏收尾。
       */}
       <header className="mb-12 sm:mb-16">
         <p className="t-kicker mb-5">{t('nav.brand')}</p>

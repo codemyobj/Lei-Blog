@@ -10,7 +10,7 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      {/* 页头：手账 masthead —— 手写小标注 + 黑体标题 + 导语 */}
       <header className="mb-12">
         <p className="t-kicker mb-5">{t('nav.categories')}</p>
         <h1 className="text-3xl mb-3">
@@ -34,16 +34,15 @@ export default function CategoriesPage() {
       )}
 
       {!loading && !error && data.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-6">
           {data.map((category) => (
             <Link
               key={category.id}
               to={`/categories/${category.slug}`}
-              className="card-flat block group"
+              /* 手账卡：圆角 + 软阴影 + hover 上浮（预览 .card） */
+              className="card card-hover p-6 block group"
             >
-              <h2
-                className="text-lg mb-2 flex items-center gap-2 group-hover:text-[color:var(--brand)]"
-              >
+              <h2 className="text-lg mb-2 flex items-center gap-2 group-hover:text-[color:var(--brand)]">
                 <span aria-hidden="true">📁</span>
                 {category.name}
               </h2>

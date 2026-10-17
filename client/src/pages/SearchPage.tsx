@@ -9,6 +9,7 @@ import Pagination from '../components/Pagination'
 import TagBadge from '../components/TagBadge'
 import Highlight from '../components/Highlight'
 import { formatDate } from '../utils/formatDate'
+import { pastelClass } from '../utils/pastel'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -60,7 +61,7 @@ export default function SearchPage() {
   const renderTagSuggestions = (tagsToRender: typeof hotTags) => (
     <div className="flex flex-wrap gap-2">
       {tagsToRender.map((tag) => (
-        <Link key={tag.id} to={`/search?q=${encodeURIComponent(tag.name)}`} className="tag-badge px-3 py-1 text-xs">
+        <Link key={tag.id} to={`/search?q=${encodeURIComponent(tag.name)}`} className={`tag-badge ${pastelClass(tag.id)} px-3 py-1 text-xs`}>
           # {tag.name}
         </Link>
       ))}
@@ -69,7 +70,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-3xl">
-      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      {/* 页头：手账 masthead —— 手写小标注 + 黑体标题 + 导语 */}
       <header className="mb-12">
         <p className="t-kicker mb-5">{t('nav.search')}</p>
         <h1 className="text-3xl mb-3">

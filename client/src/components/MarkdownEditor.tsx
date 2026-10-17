@@ -136,7 +136,7 @@ export default function MarkdownEditor({ value, onChange, height = 400 }: Markdo
               className="px-3 py-1 text-xs font-semibold transition-colors"
               style={{
                 background: mode === m ? 'var(--brand)' : 'transparent',
-                /* 暗色下 --brand-fg 是近黑；#fff 在 #FF4D4D 上只有 3.27:1 */
+                /* --brand-fg 亮暗两套 token 均已按 ≥4.5:1 校验（见 scripts/verify-contrast.mjs） */
                 color: mode === m ? 'var(--brand-fg)' : 'var(--text-muted)',
               }}
             >

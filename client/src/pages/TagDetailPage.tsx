@@ -33,7 +33,7 @@ export default function TagDetailPage() {
         <span style={{ color: 'var(--text)' }}>#{tag.name}</span>
       </div>
 
-      {/* 页头：杂志 masthead —— 红色 kicker + 衬线标题 + 导语 */}
+      {/* 页头：手账 masthead —— 手写小标注 + 黑体标题 + 导语 */}
       <header className="mb-12">
         <p className="t-kicker mb-5">{t('nav.tags')}</p>
         <h1 className="text-3xl mb-3">

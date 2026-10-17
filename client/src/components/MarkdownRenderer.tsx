@@ -5,6 +5,7 @@ import rehypeSlug from 'rehype-slug'
 import type { Components } from 'react-markdown'
 import { useTheme } from '../context/ThemeContext'
 import rehypeGallery from '../utils/rehypeGallery'
+import remarkHighlight from '../utils/remarkHighlight'
 
 const components: Components = {
   a: ({ href, children }) => (
@@ -39,7 +40,7 @@ export default function MarkdownRenderer({ content }: { content: string }) {
   return (
     <div className={`markdown-body ${resolvedTheme === 'dark' ? 'dark-code' : 'light-code'}`}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkHighlight]}
         rehypePlugins={[rehypeHighlight, rehypeGallery, rehypeSlug]}
         components={components}
       >

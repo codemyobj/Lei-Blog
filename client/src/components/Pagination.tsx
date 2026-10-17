@@ -53,7 +53,7 @@ export default function Pagination({ page, totalPages, onChange }: PaginationPro
               className="w-10 h-10 text-sm font-semibold transition-colors"
               style={{
                 background: p === page ? 'var(--brand)' : 'transparent',
-                /* 暗色下 --brand-fg 为近黑；#fff 在 #FF4D4D 上不达标 */
+                /* --brand-fg 亮暗两套 token 均已按 ≥4.5:1 校验（见 scripts/verify-contrast.mjs） */
                 color: p === page ? 'var(--brand-fg)' : 'var(--text-secondary)',
               }}
             >

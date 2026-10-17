@@ -276,8 +276,8 @@ async function themeProbe(cdp, theme, colorScheme) {
     atDCL: window.__atDCL,
     frames: window.__frames,
     darkFrames: window.__frames.filter(f => f.cls && f.cls.includes('dark')).length,
-    whiteFrames: window.__frames.filter(f => f.bg === 'rgb(251, 249, 246)').length,
-    blackFrames: window.__frames.filter(f => f.bg === 'rgb(14, 13, 12)').length,
+    whiteFrames: window.__frames.filter(f => f.bg === 'rgb(251, 248, 243)').length,
+    blackFrames: window.__frames.filter(f => f.bg === 'rgb(23, 20, 15)').length,
     totalFrames: window.__frames.length,
   }))()`)
 }
@@ -312,8 +312,8 @@ async function main() {
       `class="${dark.atDCL?.cls}"`
     )
     check(
-      'theme=dark：DCL 时 body 背景即为暗色 #0e0d0c（暖近黑，非瑞士冷黑）',
-      dark.atDCL?.bg === 'rgb(14, 13, 12)',
+      'theme=dark：DCL 时 body 背景即为暗色 #17140f（手账风暖近黑）',
+      dark.atDCL?.bg === 'rgb(23, 20, 15)',
       dark.atDCL?.bg
     )
     check(
@@ -330,7 +330,7 @@ async function main() {
     const light = await themeProbe(cdp, 'light', 'dark')
     check(
       'theme=light 且系统为暗：DCL 时仍为亮色（用户显式选择优先）',
-      !(light.atDCL?.cls ?? '').includes('dark') && light.atDCL?.bg === 'rgb(251, 249, 246)',
+      !(light.atDCL?.cls ?? '').includes('dark') && light.atDCL?.bg === 'rgb(251, 248, 243)',
       `class="${light.atDCL?.cls}" bg=${light.atDCL?.bg}`
     )
     check(
@@ -342,7 +342,7 @@ async function main() {
     const sysDark = await themeProbe(cdp, 'system', 'dark')
     check(
       'theme=system 且系统为暗：首帧即为暗色（探针 DCL 校验）',
-      (sysDark.atDCL?.cls ?? '').includes('dark') && sysDark.atDCL?.bg === 'rgb(14, 13, 12)',
+      (sysDark.atDCL?.cls ?? '').includes('dark') && sysDark.atDCL?.bg === 'rgb(23, 20, 15)',
       `class="${sysDark.atDCL?.cls}" bg=${sysDark.atDCL?.bg}`
     )
     check(
@@ -354,14 +354,14 @@ async function main() {
     const sysLight = await themeProbe(cdp, 'system', 'light')
     check(
       'theme=system 且系统为亮：首帧即为亮色',
-      !(sysLight.atDCL?.cls ?? '').includes('dark') && sysLight.atDCL?.bg === 'rgb(251, 249, 246)',
+      !(sysLight.atDCL?.cls ?? '').includes('dark') && sysLight.atDCL?.bg === 'rgb(251, 248, 243)',
       `class="${sysLight.atDCL?.cls}" bg=${sysLight.atDCL?.bg}`
     )
 
     const dirty = await themeProbe(cdp, 'darkk', 'light')
     check(
       "脏数据 theme='darkk' 回落到 system（跟随系统亮色），首帧亮色",
-      !(dirty.atDCL?.cls ?? '').includes('dark') && dirty.atDCL?.bg === 'rgb(251, 249, 246)',
+      !(dirty.atDCL?.cls ?? '').includes('dark') && dirty.atDCL?.bg === 'rgb(251, 248, 243)',
       `class="${dirty.atDCL?.cls}" bg=${dirty.atDCL?.bg}`
     )
     check(
@@ -505,8 +505,8 @@ async function main() {
       )
     }
 
-    // ---------- 标题字体（杂志化：显示衬线，Archivo 已移除） ----------
-    console.log('\n--- 标题字体：显示衬线生效 / Archivo 已退场 ---')
+    // ---------- 标题字体（手账风：黑体系统栈，Newsreader/Archivo 均已移除） ----------
+    console.log('\n--- 标题字体：黑体系统栈生效 / 自托管字体全部退场 ---')
     await navigate(cdp, '/archive')
     const fontInfo = await cdp.evaluate(`(async () => {
       await document.fonts.ready
@@ -520,19 +520,20 @@ async function main() {
       }
     })()`)
     check(
-      'h1 computed font-family 以 Newsreader 开头（杂志化显示衬线，取代 Archivo）',
-      (fontInfo.h1Family ?? '').startsWith('Newsreader'),
+      'h1 computed font-family 以 PingFang SC 开头（手账风：标题走黑体，与正文同族）',
+      /^["']?PingFang SC/.test(fontInfo.h1Family ?? ''),
       fontInfo.h1Family
     )
     check(
-      '显示衬线栈含中文系统宋体回退（Noto Serif SC / SimSun，中文零字节方案）',
-      /Noto Serif SC/.test(fontInfo.h1Family ?? '') && /SimSun/.test(fontInfo.h1Family ?? ''),
+      '标题栈含中文系统黑体回退（HarmonyOS / MiSans / Microsoft YaHei，中文零字节方案）',
+      /HarmonyOS Sans SC/.test(fontInfo.h1Family ?? '') &&
+        /Microsoft YaHei/.test(fontInfo.h1Family ?? ''),
       fontInfo.h1Family
     )
     check(
-      'Archivo 已彻底退场：document.fonts 中不再注册 Archivo（上一轮 38752 B 的资产已删）',
-      fontInfo.fonts.every((f) => !f.startsWith('Archivo')),
-      fontInfo.fonts.join(' | ') || '（无自托管字体条目）'
+      'Newsreader / Archivo 均已退场：document.fonts 中零自托管字体条目',
+      fontInfo.fonts.length === 0,
+      fontInfo.fonts.join(' | ') || '（0 个自托管字体条目）'
     )
     check(
       '标题负字距生效（h1 letter-spacing 为负值）',
@@ -540,8 +541,8 @@ async function main() {
       `letter-spacing=${fontInfo.h1LetterSpacing}`
     )
     check(
-      '标题字重由标题 CSS 规则决定：h1=600（杂志化统一 600，层级靠字号不靠字重）',
-      fontInfo.h1Weight === '600',
+      '标题字重由标题 CSS 规则决定：h1=700（手账风统一 700，层级靠字号不靠字重）',
+      fontInfo.h1Weight === '700',
       `font-weight=${fontInfo.h1Weight}`
     )
 
@@ -563,12 +564,12 @@ async function main() {
       return r
     })()`)
     check(
-      '标题 CSS 规则生效：纯 <h1> / <h2> / <h3> 均为 600（杂志化统一字重）',
-      cascade.plainH2 === '600' && cascade.plainH3 === '600' && cascade.plainH1 === '600',
+      '标题 CSS 规则生效：纯 <h1> / <h2> / <h3> 均为 700（手账风统一字重）',
+      cascade.plainH2 === '700' && cascade.plainH3 === '700' && cascade.plainH1 === '700',
       `h1=${cascade.plainH1} h2=${cascade.plainH2} h3=${cascade.plainH3}`
     )
     check(
-      '<h2 class="font-bold"> 实测 700 —— 证伪"非分层护栏"：utility 在标题上真的会赢（故须靠约定禁用）',
+      '<h2 class="font-bold"> 实测 700（与 CSS 同值）—— 证伪"非分层护栏"：utility 在标题上真的会赢（故须靠约定禁用）',
       cascade.h2Bold === '700',
       `h2.font-bold=${cascade.h2Bold}`
     )
@@ -589,13 +590,13 @@ async function main() {
       }
     })()`)
     check(
-      '真实 admin 页（你点名的 AdminDashboardPage）<h2 class="text-lg"> 实测字重 = 600',
-      adminH.path === '/admin' && adminH.h2Weight === '600',
+      '真实 admin 页（AdminDashboardPage）<h2 class="text-lg"> 实测字重 = 700',
+      adminH.path === '/admin' && adminH.h2Weight === '700',
       `path=${adminH.path} h2="${adminH.h2Text}" class="${adminH.h2Class}" weight=${adminH.h2Weight}`
     )
     check(
-      '真实 admin 页 <h1> 实测字重 = 600（与 CSS 一致，无 utility 干扰）',
-      adminH.h1Weight === '600',
+      '真实 admin 页 <h1> 实测字重 = 700（与 CSS 一致，无 utility 干扰）',
+      adminH.h1Weight === '700',
       `h1 weight=${adminH.h1Weight}`
     )
     await cdp.evaluate(`localStorage.removeItem('token')`)
@@ -635,7 +636,7 @@ async function main() {
       return { hasName: text.includes('前端'), cards: document.querySelectorAll('.card-media').length }
     })()`)
     check(
-      '分类详情页渲染该分类下的文章卡片（杂志卡片 .card-media）',
+      '分类详情页渲染该分类下的文章卡片（手账卡 .card-media）',
       catDetail.hasName && catDetail.cards === 2,
       `card-media 数=${catDetail.cards}`
     )
@@ -688,19 +689,21 @@ async function main() {
       const str = document.querySelector('.hljs-string')
       const h1 = document.querySelector('main h1, article h1')
       const top = (el) => el ? el.getBoundingClientRect().top : null
-      // 开场红色 kicker（分类，含右侧延伸细线）
+      // 手写小标注（分类；✎ 前缀由 CSS ::before 提供）
       const kicker = document.querySelector('.t-kicker')
       // 元信息行 = 含"分钟阅读/min read"的 .t-meta（不是 TOC 的 "On this page"）
       const metaRow = [...document.querySelectorAll('.t-meta')]
         .find((e) => /分钟阅读|min read/i.test(e.textContent))
-      // 首字下沉：读第一段的 ::first-letter 计算样式
+      // 手账引文：粉彩圆角块 + 手写正文
+      const bq = document.querySelector('.markdown-body blockquote')
+      const bqP = bq ? bq.querySelector('p') : null
+      const bqBefore = bq ? getComputedStyle(bq, '::before') : null
+      // 荧光笔标题：读 h2 的背景图与 fit-content 宽度行为
+      const h2El = document.querySelector('.markdown-body h2')
+      const h2cs = h2El ? getComputedStyle(h2El) : null
+      // 首字下沉必须**已移除**：第一段的 ::first-letter 应与正文同字号
       const firstP = document.querySelector('.markdown-body > p:first-of-type')
       const fl = firstP ? getComputedStyle(firstP, '::first-letter') : null
-      // 编号章节：读 h2 的 ::before 生成内容
-      const h2El = document.querySelector('.markdown-body h2')
-      const h2Before = h2El ? getComputedStyle(h2El, '::before') : null
-      // 红边引文
-      const bq = document.querySelector('.markdown-body blockquote')
       return {
         h2, h3, tocLinks,
         preCount: document.querySelectorAll('.markdown-body pre').length,
@@ -709,28 +712,39 @@ async function main() {
         preHtml: pre ? pre.outerHTML.slice(0, 400) : null,
         codeCls: pre ? (pre.querySelector('code')?.className ?? null) : null,
         h1Text: h1 ? h1.textContent.trim().slice(0, 40) : null,
-        // 杂志化元素
+        // ---- 手账风元素 ----
         kickerText: kicker ? kicker.textContent.trim() : null,
+        kickerFont: kicker ? getComputedStyle(kicker).fontFamily : null,
         kickerColor: kicker ? getComputedStyle(kicker).color : null,
-        kickerAfterBg: kicker ? getComputedStyle(kicker, '::after').backgroundColor : null,
+        kickerBeforeContent: kicker ? getComputedStyle(kicker, '::before').content : null,
         kickerAboveH1: kicker && h1 ? top(kicker) < top(h1) : false,
         metaText: metaRow ? metaRow.textContent.trim().slice(0, 60) : null,
         metaBelowH1: metaRow && h1 ? top(metaRow) > top(h1) : false,
-        ruleDoubleCount: document.querySelectorAll('.rule-double').length,
-        ruleDoubleTop: (() => {
-          const rd = document.querySelector('.rule-double')
-          return rd ? getComputedStyle(rd).borderTopWidth : null
-        })(),
-        dropCapFont: fl ? fl.fontFamily : null,
+        // 荧光笔标题
+        h2BgImage: h2cs ? h2cs.backgroundImage : null,
+        h2FontWeight: h2cs ? h2cs.fontWeight : null,
+        h2FontSize: h2cs ? h2cs.fontSize : null,
+        h2Padding: h2cs ? h2cs.padding : null,
+        h2Width: h2El ? h2El.getBoundingClientRect().width : null,
+        h2TextWidth: h2El ? (h2El.firstChild?.textContent ?? '').length : 0,
+        // 引文
+        bqRadius: bq ? getComputedStyle(bq).borderRadius : null,
+        bqBg: bq ? getComputedStyle(bq).backgroundColor : null,
+        bqPad: bq ? getComputedStyle(bq).padding : null,
+        bqFont: bqP ? getComputedStyle(bqP).fontFamily : null,
+        bqFontSize: bqP ? getComputedStyle(bqP).fontSize : null,
+        bqBeforeContent: bqBefore ? bqBefore.content : null,
+        bqBeforeFont: bqBefore ? bqBefore.fontFamily : null,
+        // 首字下沉应已移除
         dropCapSize: fl ? fl.fontSize : null,
         dropCapFloat: fl ? fl.float : null,
-        h2NumberContent: h2Before ? h2Before.content : null,
-        h2NumberColor: h2Before ? h2Before.color : null,
-        bqBorderLeft: bq ? getComputedStyle(bq).borderLeftColor : null,
-        bqBorderWidth: bq ? getComputedStyle(bq).borderLeftWidth : null,
-        bqFont: bq ? getComputedStyle(bq).fontFamily : null,
         // NULL 封面约束：技术文（cover_image=null）不应渲染任何封面 figure
         coverFigure: document.querySelectorAll('article figure.hairline-frame, main figure.hairline-frame').length,
+        // hero 收尾细线（--rule）：文章 header 之后、正文之前的那条 hr
+        heroRuleColor: (() => {
+          const hr = [...document.querySelectorAll('article hr')].find((h) => h.style.borderColor)
+          return hr ? getComputedStyle(hr).borderTopColor : null
+        })(),
         bodyText: document.body.innerText.slice(0, 120),
       }
     })()`)
@@ -754,8 +768,8 @@ async function main() {
       `样例=${detail.tocLinks.slice(0, 3).join(', ')}`
     )
     check(
-      '代码块渲染且圆角归零（杂志化同样零圆角）',
-      detail.preCount === 2 && detail.preBorderRadius === '0px',
+      '代码块渲染且圆角恢复（手账风 pre = 14px 圆角，不再是直角）',
+      detail.preCount === 2 && detail.preBorderRadius === '14px',
       `pre 数=${detail.preCount} radius=${detail.preBorderRadius}`
     )
     check(
@@ -764,46 +778,59 @@ async function main() {
       `code class="${detail.codeCls}" | ${detail.preHtml}`
     )
 
-    // ---- 杂志化 8 元素（真机实测） ----
-    console.log('\n--- 杂志化编辑风：8 个视觉元素真机实测 ---')
+    // ---- 手账风元素（真机实测） ----
+    console.log('\n--- 轻松手账风：视觉元素真机实测 ---')
     check(
-      '① 红色 kicker 渲染在标题上方（分类名 + 强调色 #E4002B 系）',
+      '① 手写小标注渲染在标题上方（分类名 + ✎ 前缀 + 手写体 + 珊瑚橘）',
       !!detail.kickerText && detail.kickerAboveH1 === true &&
-        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.kickerColor ?? ''),
-      `kicker="${detail.kickerText}" color=${detail.kickerColor} above=${detail.kickerAboveH1}`
+        detail.kickerBeforeContent === '"✎ "' &&
+        /KaiTi|STKaiti|Kaiti SC|cursive/.test(detail.kickerFont ?? '') &&
+        /rgb\(194, 65, 12\)|rgb\(253, 186, 116\)/.test(detail.kickerColor ?? ''),
+      `kicker="${detail.kickerText}" ::before=${detail.kickerBeforeContent} font=${detail.kickerFont} color=${detail.kickerColor} above=${detail.kickerAboveH1}`
     )
     check(
-      '① kicker ::after 延伸细线存在（background 非 transparent）',
-      !!detail.kickerAfterBg && detail.kickerAfterBg !== 'rgba(0, 0, 0, 0)',
-      `::after bg=${detail.kickerAfterBg}`
+      '② 荧光笔标题：h2 有 linear-gradient 高亮 + 黑体 700 + 26px + 左右 2px 内边距',
+      /linear-gradient/.test(detail.h2BgImage ?? '') &&
+        detail.h2FontWeight === '700' &&
+        detail.h2FontSize === '26px' &&
+        /(^|\s)0px 2px(\s|$)/.test(detail.h2Padding ?? ''),
+      `bg=${(detail.h2BgImage ?? '').slice(0, 60)} weight=${detail.h2FontWeight} size=${detail.h2FontSize} padding=${detail.h2Padding}`
     )
     check(
-      '② 双细线（.rule-double）渲染，上边 3px 强调线，位于正文之前',
-      detail.ruleDoubleCount === 1 && detail.ruleDoubleTop === '3px',
-      `count=${detail.ruleDoubleCount} border-top=${detail.ruleDoubleTop}`
+      '② 荧光笔只包住文字不通栏（h2 实测宽度 < 正文容器宽度）',
+      detail.h2Width > 0 && detail.h2Width < 700,
+      `h2 宽=${detail.h2Width?.toFixed?.(1)}px（fit-content 生效）`
     )
     check(
-      '③ 编号章节：h2 的 ::before 生成 counter 编号且为强调色',
-      /counter\(section/.test(detail.h2NumberContent ?? '') &&
-        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.h2NumberColor ?? ''),
-      `content=${detail.h2NumberContent} color=${detail.h2NumberColor}`
+      '③ 首字下沉已移除：第一段 ::first-letter 与正文同字号且不浮动',
+      detail.dropCapSize === '16px' && detail.dropCapFloat === 'none',
+      `::first-letter size=${detail.dropCapSize} float=${detail.dropCapFloat}`
     )
     check(
-      '④ 首字下沉：正文第一段 ::first-letter 为衬线 64px 且 float:left',
-      /Newsreader/.test(detail.dropCapFont ?? '') &&
-        detail.dropCapSize === '64px' &&
-        detail.dropCapFloat === 'left',
-      `font=${detail.dropCapFont} size=${detail.dropCapSize} float=${detail.dropCapFloat}`
+      '④ hero 收尾改用 --rule 细线：文章头与正文之间有一条 hr，边框色为结构线色',
+      detail.heroRuleColor === 'rgb(216, 208, 194)' || detail.heroRuleColor === 'rgb(62, 56, 48)',
+      `hr border-color=${detail.heroRuleColor}`
     )
     check(
-      '⑤ 红边引文：blockquote 左 3px 强调色 + 衬线字体',
-      detail.bqBorderWidth === '3px' &&
-        /rgb\(228, 0, 43\)|rgb\(255, 77, 77\)/.test(detail.bqBorderLeft ?? '') &&
-        /Newsreader/.test(detail.bqFont ?? ''),
-      `border-left=${detail.bqBorderWidth} ${detail.bqBorderLeft} font=${detail.bqFont}`
+      '④ .rule-double / .dbl 双细线在页面上已不存在（上一轮组件已删）',
+      (await cdp.evaluate(`document.querySelectorAll('.rule-double, .dbl').length`)) === 0,
+      `count=${await cdp.evaluate(`document.querySelectorAll('.rule-double, .dbl').length`)}`
     )
     check(
-      '⑤ 元信息行（.t-meta）含阅读时长且渲染在标题 h1 下方（杂志 meta 语汇）',
+      '⑤ 手账引文：butter 粉彩底 + 14px 圆角 + 22/26 内边距 + 大引号（CSS \\201C 计算后为 “）',
+      detail.bqRadius === '14px' &&
+        detail.bqPad === '22px 26px' &&
+        detail.bqBeforeContent === '"\u201C"' &&
+        /Georgia/.test(detail.bqBeforeFont ?? ''),
+      `radius=${detail.bqRadius} bg=${detail.bqBg} padding=${detail.bqPad} ::before=${detail.bqBeforeContent} font=${detail.bqBeforeFont}`
+    )
+    check(
+      '⑤ 引文正文用手写体 20px（不是衬线/黑体）',
+      /KaiTi|STKaiti|Kaiti SC|cursive/.test(detail.bqFont ?? '') && detail.bqFontSize === '20px',
+      `font=${detail.bqFont} size=${detail.bqFontSize}`
+    )
+    check(
+      '⑤ 元信息行（.t-meta）含阅读时长且渲染在标题 h1 下方（手账 meta 语汇）',
       !!detail.metaText &&
         /分钟阅读|min read/i.test(detail.metaText) &&
         detail.metaBelowH1 === true,
@@ -813,6 +840,49 @@ async function main() {
       '⚠️ NULL 封面约束：cover_image=null 的技术文**不渲染任何封面 figure**（不塌陷、不破图）',
       detail.coverFigure === 0,
       `figure.hairline-frame 数=${detail.coverFigure}`
+    )
+
+    // ---- 贴纸标签：粉彩 pill（真实页面取色复测） ----
+    console.log('\n--- 贴纸标签：粉彩 pill 真机实测 ---')
+    const badges = await cdp.evaluate(`(() => {
+      const els = [...document.querySelectorAll('.tag-badge')]
+      return els.slice(0, 8).map((el) => {
+        const cs = getComputedStyle(el)
+        return {
+          text: el.textContent.trim(),
+          cls: String(el.className),
+          bg: cs.backgroundColor,
+          fg: cs.color,
+          radius: cs.borderRadius,
+          borderWidth: cs.borderTopWidth,
+        }
+      })
+    })()`)
+    check(
+      '文章标签渲染为粉彩 pill（border-radius 999px、无边框、非透明底）',
+      badges.length > 0 &&
+        badges.every((b) => b.radius === '999px' && b.borderWidth === '0px' && b.bg !== 'rgba(0, 0, 0, 0)'),
+      badges.map((b) => `${b.text}:${b.bg}/${b.fg} r=${b.radius}`).join(' | ')
+    )
+
+    // 轮换效果要在**多个标签**的页面上看：标签页有 4 个标签，颜色应该不止一种。
+    await navigate(cdp, '/tags')
+    const cloudBadges = await cdp.evaluate(`(() => {
+      const els = [...document.querySelectorAll('.tag-badge')]
+      return els.map((el) => {
+        const cs = getComputedStyle(el)
+        return { text: el.textContent.trim().slice(0, 14), bg: cs.backgroundColor, fg: cs.color, radius: cs.borderRadius }
+      })
+    })()`)
+    check(
+      '粉彩取模轮换生效：标签页 4 个标签出现 ≥2 种不同底色（不是一色到底）',
+      cloudBadges.length >= 2 && new Set(cloudBadges.map((b) => b.bg)).size >= 2,
+      cloudBadges.map((b) => `${b.text}:${b.bg}`).join(' | ')
+    )
+    check(
+      '标签页贴纸同样是 pill + 非透明粉彩底',
+      cloudBadges.every((b) => b.radius === '999px' && b.bg !== 'rgba(0, 0, 0, 0)'),
+      cloudBadges.map((b) => `${b.text}: r=${b.radius}`).join(' | ')
     )
 
     // ---- 生活类文章：图集网格（rehypeGallery 从连续图片段落长出） ----
@@ -827,6 +897,7 @@ async function main() {
       const bq = document.querySelector('.markdown-body blockquote')
       const firstP = document.querySelector('.markdown-body > p:first-of-type')
       const fl = firstP ? getComputedStyle(firstP, '::first-letter') : null
+      const gItem = document.querySelector('.markdown-body .md-gallery-item')
       return {
         gridCount: document.querySelectorAll('.markdown-body .md-gallery').length,
         items: items.length,
@@ -836,9 +907,33 @@ async function main() {
         capCount: document.querySelectorAll('.markdown-body .md-gallery-cap').length,
         coverFigure: document.querySelectorAll('article figure.hairline-frame, main figure.hairline-frame').length,
         contentTop: document.querySelectorAll('article > *').length,
-        hasDropCap: fl ? fl.float === 'left' : false,
+        // 首字下沉应已移除
+        dropCapSize: fl ? fl.fontSize : null,
+        dropCapFloat: fl ? fl.float : null,
         hasQuote: !!bq,
         h2Count: document.querySelectorAll('.markdown-body h2').length,
+        // 图集格圆角化（手账风：12px，不再是直角）
+        galleryItemRadius: gItem ? getComputedStyle(gItem).borderRadius : null,
+        // 荧光笔高亮（手账风行内强调，语法为两个等号包裹）
+        markCount: document.querySelectorAll('.markdown-body mark').length,
+        markClass: (() => {
+          const m = document.querySelector('.markdown-body mark')
+          return m ? (m.getAttribute('class') ?? '') : null
+        })(),
+        markBgImage: (() => {
+          const m = document.querySelector('.markdown-body mark')
+          return m ? getComputedStyle(m).backgroundImage : null
+        })(),
+        markColor: (() => {
+          const m = document.querySelector('.markdown-body mark')
+          return m ? getComputedStyle(m).color : null
+        })(),
+        // 引文署名：多段引文的最后一段
+        attributionSize: (() => {
+          const ps = document.querySelectorAll('.markdown-body blockquote > p')
+          const last = ps[ps.length - 1]
+          return last ? getComputedStyle(last).fontSize : null
+        })(),
       }
     })()`)
     check(
@@ -857,14 +952,155 @@ async function main() {
       `cap 数=${gallery.capCount}`
     )
     check(
+      '图集格圆角化：.md-gallery-item = 12px 圆角',
+      gallery.galleryItemRadius === '12px',
+      `radius=${gallery.galleryItemRadius}`
+    )
+    check(
       '生活文同样受 NULL 封面约束：无封面 figure（正文直接以文字 + 图集开场）',
       gallery.coverFigure === 0,
       `figure.hairline-frame 数=${gallery.coverFigure}`
     )
     check(
-      '生活文首字下沉 + 红边引文 + 编号章节同样生效（编辑风跨文章类型一致）',
-      gallery.hasDropCap === true && gallery.hasQuote === true && gallery.h2Count === 2,
-      `dropCap=${gallery.hasDropCap} quote=${gallery.hasQuote} h2=${gallery.h2Count}`
+      '荧光笔 `==文字==`：生活文正文里的高亮渲染成 <mark class="hl"> 渐变，文字色为 --text',
+      gallery.markCount === 1 &&
+        gallery.markClass === 'hl' &&
+        /linear-gradient/.test(gallery.markBgImage ?? '') &&
+        (gallery.markColor === 'rgb(42, 39, 36)' || gallery.markColor === 'rgb(242, 237, 228)'),
+      `mark 数=${gallery.markCount} class=${gallery.markClass} bg=${(gallery.markBgImage ?? '').slice(0, 50)} color=${gallery.markColor}`
+    )
+    check(
+      '引文署名约定：多段引文的最后一段渲染为 13px 手写 muted（不是 20px 正文）',
+      gallery.attributionSize === '13px',
+      `最后一段 font-size=${gallery.attributionSize}`
+    )
+
+    // ---- 涂鸦层专项（本次唯一新组件） ----
+    console.log('\n--- 涂鸦层 Doodles：pointer-events / aria-hidden / 响应式收敛 ---')
+    const doodleBase = await cdp.evaluate(`(() => {
+      const layer = document.querySelector('.doodles')
+      if (!layer) return { exists: false }
+      const cs = getComputedStyle(layer)
+      const svgs = [...layer.querySelectorAll('svg')]
+      return {
+        exists: true,
+        pointerEvents: cs.pointerEvents,
+        position: cs.position,
+        zIndex: cs.zIndex,
+        overflow: cs.overflow,
+        ariaHidden: layer.getAttribute('aria-hidden'),
+        svgCount: svgs.length,
+        classes: svgs.map((s) => s.getAttribute('class') ?? ''),
+        opacities: svgs.map((s) => getComputedStyle(s).opacity),
+        // 涂鸦是否在文档流里占位（fixed 不该影响 scrollWidth）
+        offsetHeight: layer.offsetHeight,
+      }
+    })()`)
+    check(
+      '涂鸦层存在且 pointer-events:none（不挡任何点击）',
+      doodleBase.exists && doodleBase.pointerEvents === 'none',
+      `pointer-events=${doodleBase.pointerEvents}`
+    )
+    check(
+      '涂鸦层 position:fixed + z-index:0 + overflow:hidden（不占文档流、不撑宽文档）',
+      doodleBase.position === 'fixed' && doodleBase.zIndex === '0' && doodleBase.overflow === 'hidden',
+      `position=${doodleBase.position} z-index=${doodleBase.zIndex} overflow=${doodleBase.overflow}`
+    )
+    check(
+      '涂鸦层 aria-hidden="true"（屏幕阅读器完全跳过）',
+      doodleBase.ariaHidden === 'true',
+      `aria-hidden=${doodleBase.ariaHidden}`
+    )
+    check(
+      '五个内联 SVG 涂鸦齐备（星/心/螺旋/波浪/叶子）',
+      doodleBase.svgCount === 5,
+      `${doodleBase.svgCount} 个：[${doodleBase.classes.join(', ')}]`
+    )
+    check(
+      '涂鸦透明度 0.42（暗色会降到 0.30，由 CSS 媒体查询外的 .dark 规则负责）',
+      doodleBase.opacities.every((o) => o === '0.42'),
+      `opacities=[${doodleBase.opacities.join(', ')}]`
+    )
+    // 点击穿透：在涂鸦所在坐标派发点击，落点必须是下层元素而不是涂鸦
+    const clickThrough = await cdp.evaluate(`(() => {
+      const star = document.querySelector('.d-star')
+      if (!star) return { ok: false, reason: '未找到 .d-star' }
+      const r = star.getBoundingClientRect()
+      const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      return {
+        ok: true,
+        hitTag: el ? el.tagName : null,
+        hitCls: el ? String(el.className).slice(0, 40) : null,
+        isDoodle: !!(el && el.closest('.doodles')),
+      }
+    })()`)
+    check(
+      '点击穿透：涂鸦坐标上 elementFromPoint 命中的不是涂鸦层（真的不挡点击）',
+      clickThrough.ok && clickThrough.isDoodle === false,
+      `命中=${clickThrough.hitTag}.${clickThrough.hitCls} isDoodle=${clickThrough.isDoodle}`
+    )
+
+    // 三档响应式下的可见数量
+    const doodleResponsive = []
+    for (const [w, expectVisible] of [[1440, 5], [1100, 2], [800, 2]]) {
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: w,
+        height: 900,
+        deviceScaleFactor: 1,
+        mobile: w < 768,
+      })
+      const r = await cdp.evaluate(`(() => {
+        const svgs = [...document.querySelectorAll('.doodles svg')]
+        const visible = svgs.filter((s) => getComputedStyle(s).display !== 'none')
+        return { total: svgs.length, visible: visible.length }
+      })()`)
+      doodleResponsive.push(`${w}px→${r.visible}/${r.total}（期望 ${expectVisible}）`)
+      check(
+        `涂鸦响应式收敛 @ ${w}px：可见 ${expectVisible} 个`,
+        r.visible === expectVisible,
+        doodleResponsive[doodleResponsive.length - 1]
+      )
+    }
+
+    // 列表卡：圆角 + 软阴影 + 无封面态
+    console.log('\n--- 列表卡片：圆角 / 软阴影 / 无封面降级 ---')
+    await cdp.send('Emulation.clearDeviceMetricsOverride')
+    await navigate(cdp, '/')
+    const cards = await cdp.evaluate(`(() => {
+      const els = [...document.querySelectorAll('.card-media')]
+      return els.map((el) => {
+        const cs = getComputedStyle(el)
+        const cover = el.querySelector('.card-cover')
+        const tape = el.querySelector('.tape')
+        const h2 = el.querySelector('h2')
+        return {
+          title: h2 ? h2.textContent.trim().slice(0, 20) : null,
+          radius: cs.borderRadius,
+          shadow: cs.boxShadow,
+          hasCover: !!cover,
+          hasTape: !!tape,
+          height: Math.round(el.getBoundingClientRect().height),
+          h2Weight: h2 ? getComputedStyle(h2).fontWeight : null,
+          h2Size: h2 ? getComputedStyle(h2).fontSize : null,
+        }
+      })
+    })()`)
+    check(
+      '列表卡全部为 16px 圆角 + 非 none 软阴影（手账卡，不是直角）',
+      cards.length > 0 &&
+        cards.every((c) => c.radius === '16px' && c.shadow !== 'none' && c.shadow !== ''),
+      cards.map((c) => `${c.title}: r=${c.radius} shadow=${c.shadow.slice(0, 30)}`).join(' | ')
+    )
+    check(
+      '无封面卡（4 篇全是 cover_image=NULL）不渲染封面区也不贴胶带，高度按内容收窄',
+      cards.every((c) => c.hasCover === false && c.hasTape === false) &&
+        cards.every((c) => c.height > 0 && c.height < 400),
+      cards.map((c) => `${c.title}: ${c.height}px cover=${c.hasCover} tape=${c.hasTape}`).join(' | ')
+    )
+    check(
+      '卡片标题字重 700 / 18px（由非分层 CSS 提供，JSX 上无 font-* utility）',
+      cards.every((c) => c.h2Weight === '700' && c.h2Size === '18px'),
+      cards.map((c) => `${c.h2Weight}/${c.h2Size}`).join(' | ')
     )
 
     // TOC 点击跳转真实性（回到技术文 —— 上一段把页面切到了生活文）
@@ -903,7 +1139,7 @@ async function main() {
       comment.hasIframe === false && !!comment.sectionText && comment.sectionText.length > 10,
       `iframe=${comment.hasIframe} 文本="${(comment.sectionText ?? '').slice(0, 60)}"`
     )
-    check('评论区外围有 eyebrow 标题（编辑风框架）', comment.hasEyebrow === true)
+    check('评论区外围有手写眉标标题（手账风框架）', comment.hasEyebrow === true)
 
     // 404
     await navigate(cdp, '/definitely-not-a-page')
@@ -912,6 +1148,29 @@ async function main() {
 
     // ---------- §12 #10 无横向滚动 ----------
     console.log('\n--- §12 #10 五档宽度 × 中英双语：scrollWidth <= clientWidth ---')
+    // 涂鸦层是 fixed 定位，规格特别要求查它不会把文档撑宽。
+    // 单独断言一次：涂鸦层自身的 scrollWidth 不得大于视口。
+    // ⚠️ 必须先回到**被 Layout 包裹**的路由：404 页（path="*"）不在 Layout 里，
+    //    那里没有涂鸦层，直接测会拿到"无涂鸦层"的假失败。
+    await navigate(cdp, '/')
+    const doodleOverflow = await cdp.evaluate(`(() => {
+      const layer = document.querySelector('.doodles')
+      if (!layer) return { ok: false, reason: '无涂鸦层' }
+      return {
+        ok: true,
+        layerScrollWidth: layer.scrollWidth,
+        layerClientWidth: layer.clientWidth,
+        docScrollWidth: document.documentElement.scrollWidth,
+        docClientWidth: document.documentElement.clientWidth,
+      }
+    })()`)
+    check(
+      '涂鸦层自身不产生横向溢出（layer.scrollWidth <= layer.clientWidth 且不撑宽文档）',
+      doodleOverflow.ok &&
+        doodleOverflow.layerScrollWidth <= doodleOverflow.layerClientWidth + 1 &&
+        doodleOverflow.docScrollWidth <= doodleOverflow.docClientWidth + 1,
+      JSON.stringify(doodleOverflow)
+    )
     const widths = [320, 375, 768, 1024, 1440]
     const routes = [
       '/',
