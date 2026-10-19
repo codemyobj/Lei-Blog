@@ -374,3 +374,51 @@ npm run build
 
 **根治方案**（待做）：在 Linux 上重新生成一份 lockfile（会补上 linux 平台条目，
 且保留 win32 条目），提交后服务器即可直接 `npm ci`。
+
+## 14. 部署通道（现行）：SSH 密钥直连（2026-10-19 起）
+
+lighthouse-ops MCP 连接器不可用时，改走 SSH 直连，不再依赖任何连接器/控制台。
+
+**一次性配置（已完成）**：
+- 本地密钥对：`C:\leiblog-deploy\leiblog-deploy`（ed25519，无口令；副本在
+  `C:\Users\雷磊\.workbuddy\ssh\`）。公钥以 `leiblog-deploy` 名称导入腾讯云轻量控制台
+  「SSH密钥」并绑定实例 `lhins-17lq5cct`，重启后注入 `ubuntu` 账号。
+- **Windows Git Bash 注意**：用户目录含中文（`C:\Users\雷磊`），ssh 会把 `$HOME`
+  解析成 GBK 乱码路径导致 known_hosts 写不进/读不到。**必须显式指定**：
+  `-i /c/leiblog-deploy/leiblog-deploy -o UserKnownHostsFile=/c/leiblog-deploy/known_hosts`。
+- WorkBuddy 沙箱会拦截出站 SSH，需在执行时申请绕过沙箱。
+
+**标准发版流程（全 ssh，约 3 分钟）**：
+
+```bash
+SSH="ssh -i /c/leiblog-deploy/leiblog-deploy -o UserKnownHostsFile=/c/leiblog-deploy/known_hosts -o StrictHostKeyChecking=no -o BatchMode=yes ubuntu@106.55.0.29"
+
+# 1) 本地确认 git 干净、已 push
+# 2) 推源码（git archive 只带已提交内容，天然排除 node_modules/dist/.env）
+$SSH "rm -r /tmp/leiblog-src 2>/dev/null; mkdir -p /tmp/leiblog-src"
+git archive --format=tar HEAD | $SSH "tar -x -C /tmp/leiblog-src"
+
+# 3) 预演 rsync —— 确认 --delete 不会误删密钥文件（必须先看 deleting 列表）
+$SSH 'sudo rsync -a --delete --dry-run --itemize-changes \
+  --exclude node_modules --exclude dist --exclude .env --exclude logs \
+  --exclude .adminpw --exclude .dbpw /tmp/leiblog-src/ /opt/lei-blog/ | grep deleting'
+
+# 4) 备份 dist + 真同步
+$SSH 'sudo cp -a /opt/lei-blog/client/dist /opt/dist-bak-$(date +%Y%m%d%H%M) && \
+  sudo rsync -a --delete --exclude node_modules --exclude dist --exclude .env \
+  --exclude logs --exclude .adminpw --exclude .dbpw /tmp/leiblog-src/ /opt/lei-blog/'
+
+# 5) 服务器构建（/opt/lei-blog 为 root 属主，必须 sudo；依赖没变就跳过 npm install）
+$SSH 'cd /opt/lei-blog/client && sudo npm run build'
+
+# 6) 核验：dist/assets 的 index-*.js/css 哈希应与本地构建一致；/api/health 200；
+#    /api/admin/posts 401（鉴权未误放开）
+# 7) 清理：$SSH 'rm -r /tmp/leiblog-src'
+```
+
+**血泪点**：
+- `--delete` 前必须 dry-run：服务器上有 `.dbpw`（数据库密码）和 `.adminpw`（后台密码），
+  两者都 root:root 600，**不在 exclude 里会被同步删掉**。
+- 依赖（package.json/lock）有变更时，先照 §13 补装平台二进制再构建。
+- 构建必须 `sudo`：`node_modules/.tmp/*.tsbuildinfo` 是 root 属主，ubuntu 跑 tsc 会
+  `EACCES` 且 npm 退出码仍为 0（假成功），要看产物哈希不能只看退出码。
